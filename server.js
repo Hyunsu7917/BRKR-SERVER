@@ -31,7 +31,7 @@ app.use("/assets", express.static(path.join(__dirname, "assets")));
 app.get("/latest-version.json", (req, res) => {
   res.json({
     version: "1.0.1", // 최신 앱 버전
-    apkUrl: "https://expo.dev/artifacts/eas/k3rjaa7axiyRhmqwGuH5Zb.apk" // 실제 APK 주소로 교체
+    apkUrl: "https://expo.dev/artifacts/eas/8NMGppQUHru4BMzhB8pRba.apk" // 실제 APK 주소로 교체
   });
 });
 

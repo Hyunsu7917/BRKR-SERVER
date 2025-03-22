@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "9f0fcfec-1202-43b0-a030-7510537646b9"
+      }
+    },
+    "android": {
+      "package": "com.khyunsu.brkrserver"
+    }
+  }
+}
