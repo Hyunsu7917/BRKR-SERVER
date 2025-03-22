@@ -23,7 +23,7 @@ app.use(cors());
 app.use(auth); 
 app.use("/assets", express.static(path.join(__dirname, "assets")));
 
-// 엑셀 파일 경로
+
 const workbook = xlsx.readFile(path.join(__dirname, "assets/site.xlsx"));
 
 app.get("/excel/:sheet/:value", (req, res) => {
@@ -36,7 +36,7 @@ app.get("/excel/:sheet/:value", (req, res) => {
 
   const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: "" });
 
-  // 첫 번째 열 기준으로 검색 (A열)
+
   const matchedRow = jsonData.find((row) => {
     const firstKey = Object.keys(row)[0];
     return String(row[firstKey]).trim() === decodeURIComponent(value);
