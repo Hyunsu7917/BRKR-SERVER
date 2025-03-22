@@ -7,6 +7,17 @@ const basicAuth = require("basic-auth");
 const app = express();
 const PORT = process.env.PORT || 8080;
 
+app.get("/latest-version.json", (req, res) => {
+  res.json({
+    version: "1.0.1", // 최신 앱 버전
+    apkUrl: "https://your-cdn.com/your-app.apk" // 최신 APK 파일 경로
+  });
+});
+
+app.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
+});
+
 const auth = (req, res, next) => {
     const user = basicAuth(req);
     const isAuthorized =
