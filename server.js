@@ -147,7 +147,7 @@ app.post("/api/save-usage", express.json(), (req, res) => {
       execSync("git config user.name 'BRKR-SERVER'");
       execSync("git add assets/usage.json");
       execSync(`git commit -m "💾 usage 기록: ${timestamp}"`);
-      execSync("git push");
+      execSync("git push origin HEAD:main");
       console.log("✅ usage.json Git push 성공");
     } catch (e) {
       console.error("❌ usage.json Git push 실패:", e.message);
