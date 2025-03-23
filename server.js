@@ -102,45 +102,20 @@ app.get("/excel/:sheet/:value", (req, res) => {
 });
 
 // ✅ 사용 기록 저장 API
-app.post("/api/save-usage", (req, res) => {
-  const usageData = req.body;
-  const usageFile = path.join(__dirname, "assets", "usage.json");
-
-  let existingData = [];
-  if (fs.existsSync(usageFile)) {
-    const content = fs.readFileSync(usageFile, "utf-8");
-    try {
-      existingData = JSON.parse(content);
-    } catch (err) {
-      console.error("❌ JSON 파싱 실패:", err);
-    }
-  }
-
-  existingData.push(usageData);
-
-  try {
-    fs.writeFileSync(usageFile, JSON.stringify(existingData, null, 2), "utf-8");
-    console.log("✅ 사용 기록 저장됨:", usageData);
-    res.json({ success: true });
-  } catch (err) {
-    console.error("❌ 파일 저장 실패:", err);
-    res.status(500).json({ success: false, error: "파일 저장 실패" });
-  }
-});
-// ✅ usage.json 저장 API
+// ✅ usage.json 저장 API (Part + Serial 기준 병합 저장)
 app.post("/api/save-usage", express.json(), (req, res) => {
+  const newRecord = req.body;
   const usageFilePath = path.join(__dirname, "assets", "usage.json");
 
   try {
-    const newRecord = req.body;
-
     let existingData = [];
+
     if (fs.existsSync(usageFilePath)) {
       const raw = fs.readFileSync(usageFilePath, "utf-8");
       existingData = JSON.parse(raw);
     }
 
-    // 기존 데이터에서 동일한 Part & Serial 항목이 있으면 덮어쓰기
+    // 동일 Part + Serial이 있다면 덮어쓰기
     const updatedData = [
       ...existingData.filter(
         (item) => !(item.Part === newRecord.Part && item.Serial === newRecord.Serial)
@@ -149,26 +124,11 @@ app.post("/api/save-usage", express.json(), (req, res) => {
     ];
 
     fs.writeFileSync(usageFilePath, JSON.stringify(updatedData, null, 2), "utf-8");
-    res.json({ success: true, message: "✅ 사용 기록 저장 완료" });
+    console.log("✅ usage.json 저장 완료:", newRecord);
+    res.json({ success: true, message: "사용 기록 저장 완료" });
   } catch (err) {
     console.error("❌ usage.json 저장 실패:", err);
-    res.status(500).json({ error: "서버 저장 중 오류 발생" });
-  }
-});
-// ✅ usage.json 저장 API 추가
-app.post("/usage", express.json(), (req, res) => {
-  const usageData = req.body;
-
-  const usageFilePath = path.join(__dirname, "assets", "usage.json");
-
-  try {
-    console.log("📥 수신된 사용 기록:", usageData);
-    fs.writeFileSync(usageFilePath, JSON.stringify(usageData, null, 2), "utf-8");
-    console.log("✅ usage.json 저장 완료:", usageData);
-    res.json({ success: true });
-  } catch (error) {
-    console.error("❌ usage.json 저장 실패:", error);
-    res.status(500).json({ success: false, error: "저장 중 오류 발생" });
+    res.status(500).json({ success: false, error: "서버 저장 중 오류 발생" });
   }
 });
 
