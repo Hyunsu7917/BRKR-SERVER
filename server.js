@@ -131,6 +131,15 @@ app.post("/api/save-usage", express.json(), (req, res) => {
     res.status(500).json({ success: false, error: "서버 저장 중 오류 발생" });
   }
 });
+// usage.json을 클라이언트에서 확인 (테스트용)
+app.get("/api/usage", (req, res) => {
+  const usageFilePath = path.join(__dirname, "assets", "usage.json");
+  if (!fs.existsSync(usageFilePath)) {
+    return res.json([]); // 파일이 없으면 빈 배열 반환
+  }
+  const data = fs.readFileSync(usageFilePath, "utf-8");
+  res.json(JSON.parse(data));
+});
 
 // 서버 실행
 app.listen(PORT, () => {
