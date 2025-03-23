@@ -42,21 +42,28 @@ app.post("/api/sync-usage-to-excel", async (req, res) => {
     }
 
     // 데이터 반영
+    const getCellString = (cell) => {
+      if (!cell) return "";
+      if (typeof cell === "object") return cell.text || cell.result || "";
+      return String(cell).trim();
+    };
+    
     worksheet.eachRow((row, rowNumber) => {
       if (rowNumber === 1) return; // skip header
-
-      const part = row.getCell(partIdx + 1).value;
-      const serial = row.getCell(serialIdx + 1).value;
-
+    
+      const part = getCellString(row.getCell(partIdx + 1).value);
+      const serial = getCellString(row.getCell(serialIdx + 1).value);
+    
       const match = usageData.find(
-        (u) => u.Part == part && u.Serial == serial
+        (u) => String(u.Part).trim() === part && String(u.Serial).trim() === serial
       );
-
+    
       if (match) {
         row.getCell(remarkIdx + 1).value = match.Remark || "";
         row.getCell(usageIdx + 1).value = match.UsageNote || "";
       }
     });
+    
 
     await workbook.xlsx.writeFile(excelPath);
     console.log("✅ usage.json → Part.xlsx 반영 완료");
