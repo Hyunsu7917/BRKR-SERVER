@@ -18,12 +18,11 @@ if (process.env.SSH_PRIVATE_KEY) {
   fs.writeFileSync(privateKeyPath, process.env.SSH_PRIVATE_KEY + "\n", { mode: 0o600 });
 
   execSync("mkdir -p ~/.ssh && cp ./.ssh/id_ed25519 ~/.ssh/id_ed25519");
-  //execSync("eval $(ssh-agent -s)");
-  //execSync("ssh-add ~/.ssh/id_ed25519");
+
   // ✅ GitHub 호스트 키 등록
   const knownHostsPath = path.join(sshDir, "known_hosts");
   execSync("ssh-keyscan github.com >> " + knownHostsPath);
-  execSync(`mkdir -p ~/.ssh && cp ${knownHostsPath} ~/.ssh/known_hosts`);  
+  execSync("cp ./.ssh/known_hosts ~/.ssh/known_hosts");
 }
 
 // 버전 정보
@@ -142,7 +141,6 @@ app.post("/api/save-usage", express.json(), (req, res) => {
       const timestamp = new Date().toISOString();
       execSync("git config user.email 'keyower1591@gmail.com'");
       execSync("git config user.name 'BRKR-SERVER'");
-      execSync("git remote add origin git@github.com:Hyunsu7917/BRKR-SERVER.git");
       execSync("git add assets/usage.json");
       execSync(`git commit -m '💾 usage 기록: ${timestamp}'`);
       execSync("git push origin HEAD:main");
