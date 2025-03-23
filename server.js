@@ -83,10 +83,11 @@ app.get("/excel/:sheet/:value", (req, res) => {
   }
 
   const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: "" });
-  const matchedRow = jsonData.find((row) => {
-    const firstKey = Object.keys(row)[0];
-    return String(row[firstKey]).trim() === decodeURIComponent(value);
-  });
+  const matchedRow = jsonData.find((row) =>
+    Object.values(row).some((cell) =>
+      String(cell).trim().includes(decodeURIComponent(value))
+    )
+  );
 
   if (!matchedRow) {
     return res.status(404).json({ error: `'{value}' not found in sheet '{sheet}'.` });
