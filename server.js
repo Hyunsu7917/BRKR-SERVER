@@ -155,6 +155,21 @@ app.post("/api/save-usage", express.json(), (req, res) => {
     res.status(500).json({ error: "서버 저장 중 오류 발생" });
   }
 });
+// ✅ usage.json 저장 API 추가
+app.post("/usage", express.json(), (req, res) => {
+  const usageData = req.body;
+
+  const usageFilePath = path.join(__dirname, "assets", "usage.json");
+
+  try {
+    fs.writeFileSync(usageFilePath, JSON.stringify(usageData, null, 2), "utf-8");
+    console.log("✅ usage.json 저장 완료:", usageData);
+    res.json({ success: true });
+  } catch (error) {
+    console.error("❌ usage.json 저장 실패:", error);
+    res.status(500).json({ success: false, error: "저장 중 오류 발생" });
+  }
+});
 
 // 서버 실행
 app.listen(PORT, () => {
