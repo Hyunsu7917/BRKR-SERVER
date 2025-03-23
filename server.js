@@ -57,27 +57,39 @@ app.get("/latest-version.json", (req, res) => {
 });
 
 // ----------------------------
-// 📊 Excel 파일 불러오기
+// 📊 site.xlsx 불러오기
 // ----------------------------
-const workbook = xlsx.readFile(path.join(__dirname, "assets/site.xlsx"));
+const siteWorkbook = xlsx.readFile(path.join(__dirname, "assets/site.xlsx"));
 
+// ----------------------------
+// 📊 Part.xlsx 불러오기
+// ----------------------------
+const partWorkbook = xlsx.readFile(path.join(__dirname, "assets/Part.xlsx"));
+
+// ----------------------------
+// 📊 Excel 데이터 조회 API
+// ----------------------------
 app.get("/excel/:sheet/:value", (req, res) => {
   const { sheet, value } = req.params;
-  const worksheet = workbook.Sheets[sheet];
+  let worksheet = siteWorkbook.Sheets[sheet];
+
+  // 🔄 site.xlsx에서 못 찾으면 Part.xlsx에서 찾기
+  if (!worksheet) {
+    worksheet = partWorkbook.Sheets[sheet];
+  }
 
   if (!worksheet) {
-    return res.status(404).json({ error: `Sheet '${sheet}' not found.` });
+    return res.status(404).json({ error: `Sheet '{sheet}' not found.` });
   }
 
   const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: "" });
-
   const matchedRow = jsonData.find((row) => {
     const firstKey = Object.keys(row)[0];
     return String(row[firstKey]).trim() === decodeURIComponent(value);
   });
 
   if (!matchedRow) {
-    return res.status(404).json({ error: `'${value}' not found in sheet '${sheet}'.` });
+    return res.status(404).json({ error: `'{value}' not found in sheet '{sheet}'.` });
   }
 
   res.json(matchedRow);
