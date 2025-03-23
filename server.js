@@ -119,7 +119,7 @@ app.get("/excel/part/all", (req, res) => {
   if (!fs.existsSync(filePath)) return res.status(404).json({ error: "파일 없음" });
 
   const workbook = xlsx.readFile(filePath);
-  const worksheet = workbook.Sheets["Part"];
+  const worksheet = workbook.Sheets["part"];
   const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: "" });
 
   try {
