@@ -132,40 +132,29 @@ app.get("/latest-version.json", (req, res) => {
 // server.js
 app.get("/excel/part/all", (req, res) => {
   const filePath = path.join(__dirname, "assets", "Part.xlsx");
-  if (!fs.existsSync(filePath)) return res.status(404).json({ error: "파일 없음" });
-
-  const workbook = xlsx.readFile(filePath);
-  const worksheet = workbook.Sheets["part"];
-
-  // ✅ 항상 헤더를 두 번째 줄에서 시작하도록 강제
-  const jsonData = xlsx.utils.sheet_to_json(worksheet, {
-    defval: "",
-    range: 1 // 헤더가 있는 두 번째 줄(A2부터)을 기준으로 사용
-  });
-
-  res.setHeader("Cache-Control", "no-store");
-
-  try {
-    const usageData = JSON.parse(
-      fs.readFileSync(path.join(__dirname, "assets", "usage.json"), "utf-8")
-    );
-    jsonData.forEach((row) => {
-      const part = String(row["Part#"] || "").trim();
-      const serial = String(row["Serial #"] || "").trim();
-      const match = usageData.find(
-        (u) => String(u.Part).trim() === part && String(u.Serial).trim() === serial
-      );
-
-      if (match) {
-        row["Remark"] = match.Remark;
-        row["사용처"] = match.UsageNote;
-      }
-    });
-  } catch (e) {
-    console.warn("⚠️ usage.json 불러오기 실패:", e.message);
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ error: "파일 없음" });
   }
 
-  return res.json(jsonData);
+  try {
+    const workbook = xlsx.readFile(filePath);
+    const worksheet = workbook.Sheets["part"];
+    if (!worksheet) {
+      return res.status(404).json({ error: "시트 'part'가 없습니다." });
+    }
+
+    // 직접 헤더 정의 (A1 셀이 비어 있어도 강제로 필드 설정)
+    const jsonData = xlsx.utils.sheet_to_json(worksheet, {
+      header: ["Part#", "Serial #", "PartName", "Remark", "사용처", "Rack", "Count"],
+      range: 1, // 두 번째 줄부터 데이터
+      defval: "", // 빈 셀은 공백으로 채움
+    });
+
+    res.json(jsonData);
+  } catch (err) {
+    console.error("엑셀 불러오기 오류:", err);
+    res.status(500).json({ error: "엑셀 처리 중 오류 발생" });
+  }
 });
 
 // 엑셀 조회 API
