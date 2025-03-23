@@ -6,14 +6,6 @@ const fs = require("fs");
 const basicAuth = require("basic-auth");
 const { execSync } = require("child_process"); // ✅ Git 커맨드용
 
-try {
-  execSync('git config --global user.name "BRKR-SERVER"');
-  execSync('git config --global user.email "keyower159@gmail.com"');
-  console.log("✅ Git 사용자 정보 자동 설정 완료");
-} catch (err) {
-  console.error("❌ Git 사용자 설정 실패:", err.message);
-}
-
 const app = express();
 const PORT = process.env.PORT || 8080;
 
@@ -131,6 +123,33 @@ app.post("/api/save-usage", express.json(), (req, res) => {
 
     fs.writeFileSync(usageFilePath, JSON.stringify(updatedData, null, 2), "utf-8");
     console.log("✅ usage.json 저장 완료:", newRecord);
+    // ✅ Git 사용자 정보 자동 설정
+    try {
+      execSync('git config user.email "keyower159@gmail.com"');
+      execSync('git config user.name "BBIOK-SERVER"');
+    } catch (err) {
+      console.error("❌ Git 사용자 정보 설정 실패:", err.message);
+    }
+
+    // ✅ 원격 저장소 origin 등록 (이미 등록된 경우 무시)
+    try {
+      execSync('git remote add origin https://github.com/Hyunsu7917/BRKR-SERVER.git');
+    } catch (err) {
+      if (!err.message.includes("remote origin already exists")) {
+        console.error("❌ Git remote 설정 실패:", err.message);
+      }
+    }
+
+    // ✅ 변경 사항 커밋 및 푸시
+    try {
+      execSync('git add assets/usage.json');
+      execSync('git commit -m "📝 usage 기록: ' + newRecord.Part + ' ' + newRecord.Serial + '"');
+      execSync('git push origin main');
+      console.log("🚀 Git push 완료");
+    } catch (pushErr) {
+      console.error("❌ Git push 실패:", pushErr.message);
+    }
+
 
     // ✅ Git commit & push
     execSync("git add assets/usage.json");
