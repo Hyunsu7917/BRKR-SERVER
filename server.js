@@ -83,7 +83,7 @@ app.get("/excel/:sheet/:value", (req, res) => {
   }
 
   const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: "" });
-  const matchedRow = jsonData.find((row) =>
+  const matchedRow = jsonData.filter((row) =>
     Object.values(row).some((cell) =>
       String(cell).trim().includes(decodeURIComponent(value))
     )
