@@ -114,7 +114,7 @@ app.get("/excel/:sheet/:value", (req, res) => {
   }
 });
 // server.js
-app.get("/excel/Part/all", (req, res) => {
+app.get("/excel/part/all", (req, res) => {
   const filePath = path.join(__dirname, "assets", "Part.xlsx");
   if (!fs.existsSync(filePath)) return res.status(404).json({ error: "파일 없음" });
 
