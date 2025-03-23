@@ -58,7 +58,34 @@ app.use("/assets", express.static(path.join(__dirname, "assets")));
 app.get("/latest-version.json", (req, res) => {
   res.json(versionData);
 });
+// server.js
+app.get("/excel/part/all", (req, res) => {
+  const filePath = path.join(__dirname, "assets", "Part.xlsx");
+  if (!fs.existsSync(filePath)) return res.status(404).json({ error: "파일 없음" });
 
+  const workbook = xlsx.readFile(filePath);
+  const worksheet = workbook.Sheets["part"];
+  const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: "" });
+
+  try {
+    const usageData = JSON.parse(
+      fs.readFileSync(path.join(__dirname, "assets", "usage.json"), "utf-8")
+    );
+    jsonData.forEach((row) => {
+      const match = usageData.find(
+        (u) => u.Part === row["Part#"] && u.Serial === row["Serial #"]
+      );
+      if (match) {
+        row["Remark"] = match.Remark;
+        row["사용처"] = match.UsageNote;
+      }
+    });
+  } catch (e) {
+    console.warn("⚠️ usage.json 불러오기 실패:", e.message);
+  }
+
+  return res.json(jsonData);
+});
 // 엑셀 조회 API
 app.get("/excel/:sheet/:value", (req, res) => {
   const { sheet, value } = req.params;
@@ -113,35 +140,6 @@ app.get("/excel/:sheet/:value", (req, res) => {
     return res.json(matchedRow[0]);
   }
 });
-// server.js
-app.get("/excel/Part/all", (req, res) => {
-  const filePath = path.join(__dirname, "assets", "Part.xlsx");
-  if (!fs.existsSync(filePath)) return res.status(404).json({ error: "파일 없음" });
-
-  const workbook = xlsx.readFile(filePath);
-  const worksheet = workbook.Sheets["part"];
-  const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: "" });
-
-  try {
-    const usageData = JSON.parse(
-      fs.readFileSync(path.join(__dirname, "assets", "usage.json"), "utf-8")
-    );
-    jsonData.forEach((row) => {
-      const match = usageData.find(
-        (u) => u.Part === row["Part#"] && u.Serial === row["Serial #"]
-      );
-      if (match) {
-        row["Remark"] = match.Remark;
-        row["사용처"] = match.UsageNote;
-      }
-    });
-  } catch (e) {
-    console.warn("⚠️ usage.json 불러오기 실패:", e.message);
-  }
-
-  return res.json(jsonData);
-});
-
 // ✅ usage.json 저장 및 Git 푸시
 app.post("/api/save-usage", express.json(), (req, res) => {
   const newRecord = req.body;
