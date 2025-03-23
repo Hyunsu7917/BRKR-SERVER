@@ -138,7 +138,7 @@ app.post("/api/save-usage", express.json(), (req, res) => {
       const timestamp = new Date().toISOString();
       execSync("git config user.email 'keyower1591@gmail.com'");
       execSync("git config user.name 'BRKR-SERVER'");
-      execSync("git remote set-url origin git@github.com:Hyunsu7917/BRKR-SERVER.git");
+      execSync("git remote add origin git@github.com:Hyunsu7917/BRKR-SERVER.git");
       execSync("git add assets/usage.json");
       execSync(`git commit -m '💾 usage 기록: ${timestamp}'`);
       execSync("git push origin HEAD:main");
