@@ -142,12 +142,15 @@ app.post("/api/save-usage", express.json(), (req, res) => {
 
     // ✅ 변경 사항 커밋 및 푸시
     try {
-      execSync('git add assets/usage.json');
-      execSync('git commit -m "📝 usage 기록: ' + newRecord.Part + ' ' + newRecord.Serial + '"');
-      execSync('git push origin main');
-      console.log("🚀 Git push 완료");
-    } catch (pushErr) {
-      console.error("❌ Git push 실패:", pushErr.message);
+      const timestamp = new Date().toISOString();
+      execSync("git config user.email 'keyower1591@gmail.com'");
+      execSync("git config user.name 'BRKR-SERVER'");
+      execSync("git add assets/usage.json");
+      execSync(`git commit -m "💾 usage 기록: ${timestamp}"`);
+      execSync("git push");
+      console.log("✅ usage.json Git push 성공");
+    } catch (e) {
+      console.error("❌ usage.json Git push 실패:", e.message);
     }
 
 
