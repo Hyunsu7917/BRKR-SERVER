@@ -137,9 +137,12 @@ app.get("/excel/part/all", (req, res) => {
       fs.readFileSync(path.join(__dirname, "assets", "usage.json"), "utf-8")
     );
     jsonData.forEach((row) => {
-      const match = usageData.find(
-        (u) => u.Part === row["Part#"] && u.Serial === row["Serial #"]
-      );
+      const match = usageData.find((u) => {
+        const part = String(row["Part#"] || "").trim();
+        const serial = String(row["Serial #"] || "").trim();
+        return String(u.Part).trim() === part && String(u.Serial).trim() === serial;
+      });
+      
       if (match) {
         row["Remark"] = match.Remark;
         row["사용처"] = match.UsageNote;
