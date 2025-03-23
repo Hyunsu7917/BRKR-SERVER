@@ -145,8 +145,8 @@ app.get("/excel/part/all", (req, res) => {
 
     // 직접 헤더 정의 (A1 셀이 비어 있어도 강제로 필드 설정)
     const jsonData = xlsx.utils.sheet_to_json(worksheet, {
-      header: ["Check", "Part#", "Serial #", "PartName", "Remark", "사용처", "Rack", "Count"],
-      range: 1,
+      header: "A",
+      range: 0,
       defval: "",  // 빈칸도 ""로 유지
     });
 
