@@ -7,6 +7,9 @@ const basicAuth = require("basic-auth");
 const { execSync } = require("child_process");
 const ExcelJS = require("exceljs");
 
+const app = express();
+const PORT = process.env.PORT || 8080;
+
 app.post("/api/sync-usage-to-excel", async (req, res) => {
   try {
     const usagePath = path.join(__dirname, "assets", "usage.json");
@@ -63,9 +66,6 @@ app.post("/api/sync-usage-to-excel", async (req, res) => {
     res.status(500).json({ success: false, error: "업데이트 중 오류 발생" });
   }
 });
-
-const app = express();
-const PORT = process.env.PORT || 8080;
 
 // ✅ SSH 키 등록 (환경변수에서 가져와서 등록)
 if (process.env.SSH_PRIVATE_KEY) {
