@@ -66,6 +66,12 @@ app.post("/api/sync-usage-to-excel", async (req, res) => {
     
 
     await workbook.xlsx.writeFile(excelPath);
+    const debugWorkbook = new ExcelJS.Workbook();
+    await debugWorkbook.xlsx.readFile(excelPath);
+    const debugSheet = debugWorkbook.getWorksheet("part");
+    debugSheet.eachRow((r) => {
+      console.log(r.values);  // 수정 후 값 확인용
+    });
     console.log("✅ usage.json → Part.xlsx 반영 완료");
     res.json({ success: true, message: "Part.xlsx 업데이트 완료" });
   } catch (err) {
@@ -131,6 +137,8 @@ app.get("/excel/part/all", (req, res) => {
   const workbook = xlsx.readFile(filePath);
   const worksheet = workbook.Sheets["part"];
   const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: "" });
+
+  res.setHeader("Cache-Control", "no-store");
 
   try {
     const usageData = JSON.parse(
