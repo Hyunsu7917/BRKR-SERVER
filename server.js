@@ -93,7 +93,7 @@ app.get("/excel/:sheet/:value", (req, res) => {
     return res.status(404).json({ error: `'{value}' not found in sheet '{sheet}'.` });
   }
 
-  res.json(matchedRow);
+  res.json(matchedRow[0]);
 });
 
 // ----------------------------
