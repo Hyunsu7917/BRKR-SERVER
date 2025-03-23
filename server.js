@@ -18,8 +18,8 @@ if (process.env.SSH_PRIVATE_KEY) {
   fs.writeFileSync(privateKeyPath, process.env.SSH_PRIVATE_KEY + "\n", { mode: 0o600 });
 
   execSync("mkdir -p ~/.ssh && cp ./.ssh/id_ed25519 ~/.ssh/id_ed25519");
-  execSync("eval $(ssh-agent -s)");
-  execSync("ssh-add ~/.ssh/id_ed25519");
+  //execSync("eval $(ssh-agent -s)");
+  //execSync("ssh-add ~/.ssh/id_ed25519");
 }
 
 // 버전 정보
