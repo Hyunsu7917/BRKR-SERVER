@@ -57,16 +57,6 @@ app.get("/latest-version.json", (req, res) => {
 });
 
 // ----------------------------
-// 📊 site.xlsx 불러오기
-// ----------------------------
-const siteWorkbook = xlsx.readFile(path.join(__dirname, "assets/site.xlsx"));
-
-// ----------------------------
-// 📊 Part.xlsx 불러오기
-// ----------------------------
-const partWorkbook = xlsx.readFile(path.join(__dirname, "assets/Part.xlsx"));
-
-// ----------------------------
 // 📊 Excel 데이터 조회 API
 // ----------------------------
 app.get("/excel/:sheet/:value", (req, res) => {
@@ -90,18 +80,21 @@ app.get("/excel/:sheet/:value", (req, res) => {
 
   const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: "" });
 
-  // 부분 포함 매칭
+  // 🔍 필터된 행 확인용 로그 추가
   const matchedRow = jsonData.filter((row) =>
     Object.values(row).some((v) =>
       String(v).toLowerCase().includes(decodeURIComponent(value).toLowerCase())
     )
   );
 
+  console.log("✅ 매칭된 행 수:", matchedRow.length);
+  console.log("✅ 매칭된 데이터:", matchedRow);
+
   if (!matchedRow || matchedRow.length === 0) {
     return res.status(404).json({ error: `'${value}' not found in sheet '${sheet}'.` });
   }
 
-  // ✅ 확실하게 파일 이름으로 판단
+  // ✅ 파일 경로 기준으로 응답 형식 결정
   if (filePath.includes("Part.xlsx")) {
     console.log("✅ 국내 재고 요청 - 배열 전체 전송");
     return res.json(matchedRow); // 배열 전체
@@ -111,3 +104,9 @@ app.get("/excel/:sheet/:value", (req, res) => {
   }
 });
 
+// ----------------------------
+// 🚀 서버 시작
+// ----------------------------
+app.listen(PORT, () => {
+  console.log(`🛰️  Server running on http://localhost:${PORT}`);
+});
