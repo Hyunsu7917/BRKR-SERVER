@@ -5,6 +5,64 @@ const path = require("path");
 const fs = require("fs");
 const basicAuth = require("basic-auth");
 const { execSync } = require("child_process");
+const ExcelJS = require("exceljs");
+
+app.post("/api/sync-usage-to-excel", async (req, res) => {
+  try {
+    const usagePath = path.join(__dirname, "assets", "usage.json");
+    const excelPath = path.join(__dirname, "assets", "Part.xlsx");
+
+    if (!fs.existsSync(usagePath) || !fs.existsSync(excelPath)) {
+      return res.status(404).json({ error: "파일이 존재하지 않습니다." });
+    }
+
+    const usageData = JSON.parse(fs.readFileSync(usagePath, "utf-8"));
+
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.readFile(excelPath);
+
+    const worksheet = workbook.getWorksheet("part");
+    if (!worksheet) {
+      return res.status(404).json({ error: "시트 'part'를 찾을 수 없습니다." });
+    }
+
+    // 헤더 인식
+    const headerRow = worksheet.getRow(1);
+    const headers = headerRow.values.map((v) => (typeof v === "string" ? v.trim() : v));
+    const partIdx = headers.indexOf("Part#");
+    const serialIdx = headers.indexOf("Serial #");
+    const remarkIdx = headers.indexOf("Remark");
+    const usageIdx = headers.indexOf("사용처");
+
+    if (partIdx === -1 || serialIdx === -1 || remarkIdx === -1 || usageIdx === -1) {
+      return res.status(400).json({ error: "필수 열이 누락되었습니다." });
+    }
+
+    // 데이터 반영
+    worksheet.eachRow((row, rowNumber) => {
+      if (rowNumber === 1) return; // skip header
+
+      const part = row.getCell(partIdx + 1).value;
+      const serial = row.getCell(serialIdx + 1).value;
+
+      const match = usageData.find(
+        (u) => u.Part == part && u.Serial == serial
+      );
+
+      if (match) {
+        row.getCell(remarkIdx + 1).value = match.Remark || "";
+        row.getCell(usageIdx + 1).value = match.UsageNote || "";
+      }
+    });
+
+    await workbook.xlsx.writeFile(excelPath);
+    console.log("✅ usage.json → Part.xlsx 반영 완료");
+    res.json({ success: true, message: "Part.xlsx 업데이트 완료" });
+  } catch (err) {
+    console.error("❌ Part.xlsx 업데이트 실패:", err);
+    res.status(500).json({ success: false, error: "업데이트 중 오류 발생" });
+  }
+});
 
 const app = express();
 const PORT = process.env.PORT || 8080;
