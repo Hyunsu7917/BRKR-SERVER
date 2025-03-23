@@ -1,4 +1,3 @@
-const { execSync } = require("child_process");
 const express = require("express");
 const cors = require("cors");
 const xlsx = require("xlsx");
