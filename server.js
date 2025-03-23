@@ -71,34 +71,42 @@ const partWorkbook = xlsx.readFile(path.join(__dirname, "assets/Part.xlsx"));
 // ----------------------------
 app.get("/excel/:sheet/:value", (req, res) => {
   const { sheet, value } = req.params;
-  let worksheet = siteWorkbook.Sheets[sheet];
 
-  // 🔄 site.xlsx에서 못 찾으면 Part.xlsx에서 찾기
-  if (!worksheet) {
-    worksheet = partWorkbook.Sheets[sheet];
+  const filePath =
+    sheet.toLowerCase() === "part"
+      ? path.join(__dirname, "assets", "Part.xlsx")
+      : path.join(__dirname, "assets", "site.xlsx");
+
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ error: `File not found.` });
   }
 
+  const workbook = xlsx.readFile(filePath);
+  const worksheet = workbook.Sheets[sheet];
+
   if (!worksheet) {
-    return res.status(404).json({ error: `Sheet '{sheet}' not found.` });
+    return res.status(404).json({ error: `Sheet '${sheet}' not found.` });
   }
 
   const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: "" });
-  const matchedRow = jsonData.filter((row) =>
-    Object.values(row).some((cell) =>
-      String(cell).trim().includes(decodeURIComponent(value))
-    )
-  );
 
-  if (!matchedRow) {
-    return res.status(404).json({ error: `'{value}' not found in sheet '{sheet}'.` });
+  // 🔍 부분 포함 매칭 (Part# 또는 PartName 기준)
+  const matchedRow = jsonData.filter((row) => {
+    return Object.values(row).some((v) =>
+      String(v).toLowerCase().includes(decodeURIComponent(value).toLowerCase())
+    );
+  });
+
+  if (!matchedRow || matchedRow.length === 0) {
+    return res
+      .status(404)
+      .json({ error: `'${value}' not found in sheet '${sheet}'.` });
   }
 
-  res.json(matchedRow[0]);
-});
-
-// ----------------------------
-// 🚀 서버 시작
-// ----------------------------
-app.listen(PORT, () => {
-  console.log(`🛰️  Server running on http://localhost:${PORT}`);
+  // ✅ 조건: part는 배열 전체, 그 외는 첫 번째만
+  if (sheet.toLowerCase() === "part") {
+    res.json(matchedRow); // 국내 재고는 여러 개 반환
+  } else {
+    res.json(matchedRow[0]); // 사이트플랜은 단일 반환
+  }
 });
