@@ -90,21 +90,24 @@ app.get("/excel/:sheet/:value", (req, res) => {
 
   const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: "" });
 
-  // 🔍 공백 제거 + 부분 매칭 필터
-  const matchedRow = jsonData.filter((row) => {
-    return Object.values(row).some((v) =>
-      String(v).trim().toLowerCase().includes(decodeURIComponent(value).toLowerCase())
-    );
-  });
+  // 부분 포함 매칭
+  const matchedRow = jsonData.filter((row) =>
+    Object.values(row).some((v) =>
+      String(v).toLowerCase().includes(decodeURIComponent(value).toLowerCase())
+    )
+  );
 
   if (!matchedRow || matchedRow.length === 0) {
     return res.status(404).json({ error: `'${value}' not found in sheet '${sheet}'.` });
   }
 
-  // ✅ 파일 기준으로 분리 처리
+  // ✅ 확실하게 파일 이름으로 판단
   if (filePath.includes("Part.xlsx")) {
-    res.json(matchedRow); // 국내 재고 → 여러 개
+    console.log("✅ 국내 재고 요청 - 배열 전체 전송");
+    return res.json(matchedRow); // 배열 전체
   } else {
-    res.json(matchedRow[0]); // 사이트플랜 → 첫 번째만
+    console.log("✅ 사이트플랜 요청 - 첫 줄만 전송");
+    return res.json(matchedRow[0]); // 단일 객체
   }
 });
+
