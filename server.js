@@ -127,6 +127,34 @@ app.post("/api/save-usage", (req, res) => {
     res.status(500).json({ success: false, error: "파일 저장 실패" });
   }
 });
+// ✅ usage.json 저장 API
+app.post("/api/save-usage", express.json(), (req, res) => {
+  const usageFilePath = path.join(__dirname, "assets", "usage.json");
+
+  try {
+    const newRecord = req.body;
+
+    let existingData = [];
+    if (fs.existsSync(usageFilePath)) {
+      const raw = fs.readFileSync(usageFilePath, "utf-8");
+      existingData = JSON.parse(raw);
+    }
+
+    // 기존 데이터에서 동일한 Part & Serial 항목이 있으면 덮어쓰기
+    const updatedData = [
+      ...existingData.filter(
+        (item) => !(item.Part === newRecord.Part && item.Serial === newRecord.Serial)
+      ),
+      newRecord,
+    ];
+
+    fs.writeFileSync(usageFilePath, JSON.stringify(updatedData, null, 2), "utf-8");
+    res.json({ success: true, message: "✅ 사용 기록 저장 완료" });
+  } catch (err) {
+    console.error("❌ usage.json 저장 실패:", err);
+    res.status(500).json({ error: "서버 저장 중 오류 발생" });
+  }
+});
 
 // 서버 실행
 app.listen(PORT, () => {
