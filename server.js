@@ -136,7 +136,12 @@ app.get("/excel/part/all", (req, res) => {
 
   const workbook = xlsx.readFile(filePath);
   const worksheet = workbook.Sheets["part"];
-  const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: "" });
+
+  // ✅ 항상 헤더를 두 번째 줄에서 시작하도록 강제
+  const jsonData = xlsx.utils.sheet_to_json(worksheet, {
+    defval: "",
+    range: 1 // 헤더가 있는 두 번째 줄(A2부터)을 기준으로 사용
+  });
 
   res.setHeader("Cache-Control", "no-store");
 
@@ -145,12 +150,12 @@ app.get("/excel/part/all", (req, res) => {
       fs.readFileSync(path.join(__dirname, "assets", "usage.json"), "utf-8")
     );
     jsonData.forEach((row) => {
-      const match = usageData.find((u) => {
-        const part = String(row["Part#"] || "").trim();
-        const serial = String(row["Serial #"] || "").trim();
-        return String(u.Part).trim() === part && String(u.Serial).trim() === serial;
-      });
-      
+      const part = String(row["Part#"] || "").trim();
+      const serial = String(row["Serial #"] || "").trim();
+      const match = usageData.find(
+        (u) => String(u.Part).trim() === part && String(u.Serial).trim() === serial
+      );
+
       if (match) {
         row["Remark"] = match.Remark;
         row["사용처"] = match.UsageNote;
@@ -162,6 +167,7 @@ app.get("/excel/part/all", (req, res) => {
 
   return res.json(jsonData);
 });
+
 // 엑셀 조회 API
 app.get("/excel/:sheet/:value", (req, res) => {
   const { sheet, value } = req.params;
