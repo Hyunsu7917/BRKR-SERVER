@@ -99,7 +99,7 @@ app.get("/excel/:sheet/:value", (req, res) => {
       );
       matchedRow.forEach((row) => {
         const match = usageData.find(
-          (u) => u.Part === row["Part#"] && u.Serial === row["Serial #"]
+          (u) => u["Part#"] === row["Part#"] && u["Serial #"] === row["Serial #"]
         );
         if (match) {
           row["Remark"] = match.Remark;
