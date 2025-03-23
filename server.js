@@ -1,3 +1,4 @@
+const { execSync } = require("child_process");
 const express = require("express");
 const cors = require("cors");
 const xlsx = require("xlsx");
@@ -5,6 +6,14 @@ const path = require("path");
 const fs = require("fs");
 const basicAuth = require("basic-auth");
 const { execSync } = require("child_process"); // ✅ Git 커맨드용
+
+try {
+  execSync('git config --global user.name "BRKR-SERVER"');
+  execSync('git config --global user.email "keyower159@gmail.com"');
+  console.log("✅ Git 사용자 정보 자동 설정 완료");
+} catch (err) {
+  console.error("❌ Git 사용자 설정 실패:", err.message);
+}
 
 const app = express();
 const PORT = process.env.PORT || 8080;
