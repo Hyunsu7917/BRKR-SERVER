@@ -8,6 +8,9 @@ const basicAuth = require("basic-auth");
 const app = express();
 const PORT = process.env.PORT || 8080;
 
+app.use(cors());
+app.use(express.json()); // ✅ JSON 파싱 추가
+
 // 버전 정보
 const versionFilePath = path.join(__dirname, "version.json");
 let versionData = { version: "1.0.0", apkUrl: "" };
@@ -21,7 +24,6 @@ if (fs.existsSync(versionFilePath)) {
 }
 
 // 인증
-app.use(cors());
 const auth = (req, res, next) => {
   const user = basicAuth(req);
   const isAuthorized = user && user.name === "BBIOK" && user.pass === "Bruker_2025";
@@ -96,6 +98,33 @@ app.get("/excel/:sheet/:value", (req, res) => {
     return res.json(matchedRow); // 배열 전체 반환
   } else {
     return res.json(matchedRow[0]); // 사이트플랜은 단일
+  }
+});
+
+// ✅ 사용 기록 저장 API
+app.post("/api/save-usage", (req, res) => {
+  const usageData = req.body;
+  const usageFile = path.join(__dirname, "assets", "usage.json");
+
+  let existingData = [];
+  if (fs.existsSync(usageFile)) {
+    const content = fs.readFileSync(usageFile, "utf-8");
+    try {
+      existingData = JSON.parse(content);
+    } catch (err) {
+      console.error("❌ JSON 파싱 실패:", err);
+    }
+  }
+
+  existingData.push(usageData);
+
+  try {
+    fs.writeFileSync(usageFile, JSON.stringify(existingData, null, 2), "utf-8");
+    console.log("✅ 사용 기록 저장됨:", usageData);
+    res.json({ success: true });
+  } catch (err) {
+    console.error("❌ 파일 저장 실패:", err);
+    res.status(500).json({ success: false, error: "파일 저장 실패" });
   }
 });
 
