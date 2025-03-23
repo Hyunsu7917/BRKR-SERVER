@@ -162,6 +162,7 @@ app.post("/usage", express.json(), (req, res) => {
   const usageFilePath = path.join(__dirname, "assets", "usage.json");
 
   try {
+    console.log("📥 수신된 사용 기록:", usageData);
     fs.writeFileSync(usageFilePath, JSON.stringify(usageData, null, 2), "utf-8");
     console.log("✅ usage.json 저장 완료:", usageData);
     res.json({ success: true });
