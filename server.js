@@ -139,15 +139,27 @@ app.post("/api/save-usage", express.json(), (req, res) => {
     // ✅ Git 자동 푸시
     try {
       const timestamp = new Date().toISOString();
+    
       execSync("git config user.email 'keyower1591@gmail.com'");
       execSync("git config user.name 'BRKR-SERVER'");
+    
+      // ✅ origin remote 없으면 등록 (이미 있으면 무시)
+      try {
+        execSync("git remote add origin git@github.com:Hyunsu7917/BRKR-SERVER.git");
+        console.log("✅ origin remote 추가 완료");
+      } catch (e) {
+        console.log("ℹ️ origin remote 이미 존재하거나 무시:", e.message);
+      }
+    
       execSync("git add assets/usage.json");
       execSync(`git commit -m '💾 usage 기록: ${timestamp}'`);
       execSync("git push origin HEAD:main");
+    
       console.log("✅ usage.json Git push 성공");
     } catch (e) {
       console.error("❌ usage.json Git push 실패:", e.message);
     }
+    
 
     res.json({ success: true, message: "사용 기록 저장 완료" });
   } catch (err) {
