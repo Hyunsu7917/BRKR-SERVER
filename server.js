@@ -71,7 +71,6 @@ const partWorkbook = xlsx.readFile(path.join(__dirname, "assets/Part.xlsx"));
 // ----------------------------
 app.get("/excel/:sheet/:value", (req, res) => {
   const { sheet, value } = req.params;
-  const decodedValue = decodeURIComponent(value).trim().toLowerCase();
 
   const filePath =
     sheet.toLowerCase() === "part"
@@ -91,30 +90,21 @@ app.get("/excel/:sheet/:value", (req, res) => {
 
   const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: "" });
 
-  // 🔍 조건: Part.xlsx → 'Part#' or 'PartName', site.xlsx → 첫 번째 열 기준
-  let matchedRows = [];
-
-  if (sheet.toLowerCase() === "part") {
-    matchedRows = jsonData.filter((row) => {
-      const part = String(row["Part#"] || "").trim().toLowerCase();
-      const name = String(row["PartName"] || "").trim().toLowerCase();
-      return part.includes(decodedValue) || name.includes(decodedValue);
-    });
-  } else {
-    const firstKey = Object.keys(jsonData[0] || [])[0];
-    matchedRows = jsonData.filter((row) =>
-      String(row[firstKey] || "").trim().toLowerCase() === decodedValue
+  // 🔍 공백 제거 + 부분 매칭 필터
+  const matchedRow = jsonData.filter((row) => {
+    return Object.values(row).some((v) =>
+      String(v).trim().toLowerCase().includes(decodeURIComponent(value).toLowerCase())
     );
-  }
+  });
 
-  if (matchedRows.length === 0) {
+  if (!matchedRow || matchedRow.length === 0) {
     return res.status(404).json({ error: `'${value}' not found in sheet '${sheet}'.` });
   }
 
-  // ✅ 조건: part는 배열 전체, 그 외는 첫 번째만
-  if (sheet.toLowerCase() === "part") {
-    res.json(matchedRows);
+  // ✅ 파일 기준으로 분리 처리
+  if (filePath.includes("Part.xlsx")) {
+    res.json(matchedRow); // 국내 재고 → 여러 개
   } else {
-    res.json(matchedRows[0]);
+    res.json(matchedRow[0]); // 사이트플랜 → 첫 번째만
   }
 });
