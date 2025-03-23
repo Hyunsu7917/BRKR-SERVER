@@ -23,7 +23,7 @@ if (process.env.SSH_PRIVATE_KEY) {
   // ✅ GitHub 호스트 키 등록
   const knownHostsPath = path.join(sshDir, "known_hosts");
   execSync("ssh-keyscan github.com >> " + knownHostsPath);
-  
+  execSync(`mkdir -p ~/.ssh && cp ${knownHostsPath} ~/.ssh/known_hosts`);  
 }
 
 // 버전 정보
