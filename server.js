@@ -93,7 +93,7 @@ app.get("/excel/:sheet/:value", (req, res) => {
   // 🔍 부분 포함 매칭 (Part# 또는 PartName 기준)
   const matchedRow = jsonData.filter((row) => {
     return Object.values(row).some((v) =>
-      String(v).toLowerCase().includes(decodeURIComponent(value).toLowerCase())
+      String(v).trim().toLowerCase().includes(decodeURIComponent(value).toLowerCase())
     );
   });
 
