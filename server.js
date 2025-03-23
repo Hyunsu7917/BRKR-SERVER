@@ -274,6 +274,15 @@ app.get("/api/usage", (req, res) => {
   const data = fs.readFileSync(usageFilePath, "utf-8");
   res.json(JSON.parse(data));
 });
+// usage.json 조회 API 추가
+app.get("/api/usage-json", (req, res) => {
+  const usagePath = path.join(__dirname, "assets", "usage.json");
+  if (!fs.existsSync(usagePath)) {
+    return res.status(404).json({ error: "usage.json 파일이 없습니다." });
+  }
+  const usageData = JSON.parse(fs.readFileSync(usagePath, "utf-8"));
+  res.json(usageData);
+});
 
 // 서버 실행
 app.listen(PORT, () => {
