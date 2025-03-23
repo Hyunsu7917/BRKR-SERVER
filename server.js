@@ -20,6 +20,10 @@ if (process.env.SSH_PRIVATE_KEY) {
   execSync("mkdir -p ~/.ssh && cp ./.ssh/id_ed25519 ~/.ssh/id_ed25519");
   //execSync("eval $(ssh-agent -s)");
   //execSync("ssh-add ~/.ssh/id_ed25519");
+  // ✅ GitHub 호스트 키 등록
+  const knownHostsPath = path.join(sshDir, "known_hosts");
+  execSync("ssh-keyscan github.com >> " + knownHostsPath);
+  
 }
 
 // 버전 정보
