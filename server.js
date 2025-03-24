@@ -1,91 +1,70 @@
-// 수정 및 보완된 server.js 라우팅 포함 버전
 const express = require("express");
-const path = require("path");
-const fs = require("fs");
-const xlsx = require("xlsx");
 const basicAuth = require("express-basic-auth");
 const cors = require("cors");
+const fs = require("fs");
+const path = require("path");
+const xlsx = require("xlsx");
+require("dotenv").config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 
 app.use(cors());
 app.use(express.json());
 
-app.use(
-  basicAuth({
-    users: { BBIOK: "Bruker_2025" },
-    challenge: true,
-  })
-);
+// 🔐 Basic Auth 설정
+const basicAuthMiddleware = basicAuth({
+  users: { BBIOK: "Bruker_2025" },
+  challenge: true,
+});
 
-// ✅ Part 전체 데이터 (리스트용)
-app.get("/excel/part/all", (req, res) => {
+// ✅ 국내 재고 전체 조회 (Part.xlsx)
+app.get("/excel/part/all", basicAuthMiddleware, (req, res) => {
   const filePath = path.join(__dirname, "assets", "Part.xlsx");
   if (!fs.existsSync(filePath)) return res.status(404).json({ error: "파일 없음" });
 
   const workbook = xlsx.readFile(filePath);
-  const worksheet = workbook.Sheets["part"];
+  const worksheet = workbook.Sheets[workbook.SheetNames[0]];
   const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: "" });
-  return res.json(jsonData);
+  res.json(jsonData);
 });
 
-// ✅ Part 특정 항목 조회 (value)
-app.get("/excel/part/value", (req, res) => {
-  const { part, serial } = req.query;
+// ✅ 국내 재고 Part# 검색
+app.get("/excel/part/value/:value", basicAuthMiddleware, (req, res) => {
+  const { value } = req.params;
   const filePath = path.join(__dirname, "assets", "Part.xlsx");
+  if (!fs.existsSync(filePath)) return res.status(404).json({ error: "파일 없음" });
+
   const workbook = xlsx.readFile(filePath);
-  const sheet = workbook.Sheets["part"];
-  const data = xlsx.utils.sheet_to_json(sheet, { defval: "" });
-  const matched = data.filter(
-    (row) => String(row["Part#"]).trim() === part && String(row["Serial #"]).trim() === serial
-  );
-  if (matched.length === 1) return res.json(matched[0]);
-  else return res.json(matched);
+  const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+  const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: "" });
+  const matchedRow = jsonData.filter(row => String(row["Part#"]).toLowerCase() === value.toLowerCase());
+
+  if (matchedRow.length === 1) {
+    return res.json(matchedRow[0]); // 단일 객체 반환
+  } else {
+    return res.json(matchedRow); // 배열 전체 반환
+  }
 });
 
-// ✅ 항목별 정보 (Magnet 등)
-app.get("/excel/:sheet/:value", (req, res) => {
+// ✅ 항목별 정리 (site.xlsx - Magnet, Console 등)
+app.get("/excel/:sheet/value/:value", basicAuthMiddleware, (req, res) => {
   const { sheet, value } = req.params;
   const filePath = path.join(__dirname, "assets", "site.xlsx");
-  if (!fs.existsSync(filePath)) return res.status(404).json({ error: "site.xlsx 없음" });
+  if (!fs.existsSync(filePath)) return res.status(404).json({ error: "파일 없음" });
 
   const workbook = xlsx.readFile(filePath);
   const worksheet = workbook.Sheets[sheet];
   if (!worksheet) return res.status(404).json({ error: `시트 ${sheet} 없음` });
 
   const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: "" });
-  const matchedRow = jsonData.filter((row) => Object.values(row).includes(value));
-  if (matchedRow.length === 1) return res.json(matchedRow[0]);
-  else return res.json(matchedRow);
-});
+  const matchedRow = jsonData.filter(row => String(row["Part#"]).toLowerCase() === value.toLowerCase());
 
-// ✅ usage.json 조회
-app.get("/api/usage-json", (req, res) => {
-  const usageFilePath = path.join(__dirname, "assets", "usage.json");
-  if (!fs.existsSync(usageFilePath)) return res.json([]);
-  const data = fs.readFileSync(usageFilePath, "utf-8");
-  res.json(JSON.parse(data));
-});
-
-// ✅ usage 저장
-app.post("/api/save-usage", (req, res) => {
-  const usageFilePath = path.join(__dirname, "assets", "usage.json");
-  const newRecord = req.body;
-  let usageData = [];
-
-  if (fs.existsSync(usageFilePath)) {
-    usageData = JSON.parse(fs.readFileSync(usageFilePath, "utf-8"));
+  if (matchedRow.length === 1) {
+    return res.json(matchedRow[0]);
+  } else {
+    return res.json(matchedRow);
   }
-
-  const idx = usageData.findIndex(
-    (u) => u["Part#"] === newRecord["Part#"] && u["Serial #"] === newRecord["Serial #"]
-  );
-  if (idx !== -1) usageData[idx] = newRecord;
-  else usageData.push(newRecord);
-
-  fs.writeFileSync(usageFilePath, JSON.stringify(usageData, null, 2));
-  res.json({ success: true });
 });
 
 app.listen(PORT, () => {
