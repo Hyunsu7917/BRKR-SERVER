@@ -69,40 +69,46 @@ app.get("/excel/:sheet/value/:value", basicAuthMiddleware, (req, res) => {
 });
 // ✅ 국내 재고 엑셀에 사용 기록 반영하기
 app.post("/api/update-part-excel", basicAuthMiddleware, (req, res) => {
-  console.log("✅ update-part-excel API 호출됨");
   const filePath = path.join(__dirname, "assets", "Part.xlsx");
   if (!fs.existsSync(filePath)) return res.status(404).json({ error: "파일 없음" });
 
-  const {
-    ["Part#"]: Part,
-    ["Serial #"]: Serial,
-    PartName,
-    Remark,
-    UsageNote
-  } = req.body; 
+  const { ["Part#"]: Part, ["Serial #"]: Serial, PartName, Remark, UsageNote } = req.body;
 
   try {
     const workbook = xlsx.readFile(filePath);
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     const jsonData = xlsx.utils.sheet_to_json(sheet, { defval: "" });
 
-    // Part# + Serial# 로 정확히 일치하는 행 찾기
     const rowIndex = jsonData.findIndex(row =>
-      row["Part#"] && row["Serial #"] &&
       String(row["Part#"]).toLowerCase() === String(Part).toLowerCase() &&
       String(row["Serial #"]) === String(Serial)
     );
-    
+
     if (rowIndex === -1) return res.status(404).json({ error: "해당 부품을 찾을 수 없습니다." });
 
-    // 데이터 업데이트
     jsonData[rowIndex]["Remark"] = Remark;
     jsonData[rowIndex]["사용처"] = UsageNote;
 
-    // 엑셀로 다시 저장
     const newSheet = xlsx.utils.json_to_sheet(jsonData);
     workbook.Sheets[workbook.SheetNames[0]] = newSheet;
     xlsx.writeFile(workbook, filePath);
+
+    // ✅ 백업 파일도 이 위치에서 만들어줌
+    const backupPath = path.join(__dirname, "usage-backup.json");
+    const currentBackup = fs.existsSync(backupPath)
+      ? JSON.parse(fs.readFileSync(backupPath, "utf-8"))
+      : [];
+
+    currentBackup.push({
+      "Part#": Part,
+      "Serial #": Serial,
+      PartName,
+      Remark,
+      UsageNote,
+      Timestamp: new Date().toISOString(),
+    });
+
+    fs.writeFileSync(backupPath, JSON.stringify(currentBackup, null, 2), "utf-8");
 
     return res.json({ success: true });
   } catch (err) {
@@ -110,22 +116,6 @@ app.post("/api/update-part-excel", basicAuthMiddleware, (req, res) => {
     return res.status(500).json({ error: "엑셀 저장 중 오류 발생" });
   }
 });
-// 📁 server.js 안에서 update-part-excel 라우터 안에 추가:
-const backupPath = path.join(__dirname, "usage-backup.json");
-const currentBackup = fs.existsSync(backupPath)
-  ? JSON.parse(fs.readFileSync(backupPath, "utf-8"))
-  : [];
-
-  currentBackup.push({
-    "Part#": req.body["Part#"],
-    "Serial #": req.body["Serial #"],
-    PartName: req.body.PartName,
-    Remark: req.body.Remark,
-    UsageNote: req.body.UsageNote,
-    Timestamp: new Date().toISOString(),
-  });
-
-fs.writeFileSync(backupPath, JSON.stringify(currentBackup, null, 2), "utf-8");
 
 // ✅ 서버 시작
 app.listen(PORT, () => {
