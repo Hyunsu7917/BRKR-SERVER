@@ -117,14 +117,13 @@ const currentBackup = fs.existsSync(backupPath)
   : [];
 
   currentBackup.push({
-    ["Part#"]: Part,
-    ["Serial#"]: Serial,
-    PartName,
-    Remark,
-    UsageNote,
+    "Part#": req.body["Part#"],
+    "Serial #": req.body["Serial #"],
+    PartName: req.body.PartName,
+    Remark: req.body.Remark,
+    UsageNote: req.body.UsageNote,
     Timestamp: new Date().toISOString(),
   });
-  
 
 fs.writeFileSync(backupPath, JSON.stringify(currentBackup, null, 2), "utf-8");
 
