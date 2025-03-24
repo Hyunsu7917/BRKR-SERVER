@@ -124,6 +124,51 @@ app.post("/api/save-usage", async (req, res) => {
     res.status(500).json({ error: "서버 오류" });
   }
 });
+// ✅ site.xlsx 시트 목록 조회
+app.get("/api/sheets", (req, res) => {
+  const filePath = path.join(__dirname, "assets", "site.xlsx");
+  if (!fs.existsSync(filePath)) return res.status(404).json({ error: "파일 없음" });
+
+  const workbook = xlsx.readFile(filePath);
+  res.json(workbook.SheetNames);
+});
+// ✅ site.xlsx 특정 시트 전체 조회
+app.get("/api/sheet/:name", (req, res) => {
+  const sheetName = req.params.name;
+  const filePath = path.join(__dirname, "assets", "site.xlsx");
+  if (!fs.existsSync(filePath)) return res.status(404).json({ error: "파일 없음" });
+
+  const workbook = xlsx.readFile(filePath);
+  const worksheet = workbook.Sheets[sheetName];
+  if (!worksheet) return res.status(404).json({ error: "시트 없음" });
+
+  const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: "" });
+  res.json(jsonData);
+});
+// ✅ site.xlsx 특정 시트에서 항목 검색
+app.get("/api/sheet/:name/:value", (req, res) => {
+  const { name, value } = req.params;
+  const filePath = path.join(__dirname, "assets", "site.xlsx");
+  if (!fs.existsSync(filePath)) return res.status(404).json({ error: "파일 없음" });
+
+  const workbook = xlsx.readFile(filePath);
+  const worksheet = workbook.Sheets[name];
+  if (!worksheet) return res.status(404).json({ error: "시트 없음" });
+
+  const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: "" });
+
+  const matchedRow = jsonData.filter((row) =>
+    Object.values(row).some((cell) =>
+      String(cell).toLowerCase().includes(value.toLowerCase())
+    )
+  );
+
+  if (matchedRow.length === 1) {
+    return res.json(matchedRow[0]); // 단일 객체 반환 (사이트플랜 등)
+  } else {
+    return res.json(matchedRow); // 배열 전체 반환 (리스트용)
+  }
+});
 
 // ✅ 서버 실행
 app.listen(PORT, () => {
