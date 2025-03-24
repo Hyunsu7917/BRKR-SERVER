@@ -110,6 +110,23 @@ app.post("/api/update-part-excel", basicAuthMiddleware, (req, res) => {
     return res.status(500).json({ error: "엑셀 저장 중 오류 발생" });
   }
 });
+// 📁 server.js 안에서 update-part-excel 라우터 안에 추가:
+const backupPath = path.join(__dirname, "usage-backup.json");
+const currentBackup = fs.existsSync(backupPath)
+  ? JSON.parse(fs.readFileSync(backupPath, "utf-8"))
+  : [];
+
+  currentBackup.push({
+    ["Part#"]: Part,
+    ["Serial#"]: Serial,
+    PartName,
+    Remark,
+    UsageNote,
+    Timestamp: new Date().toISOString(),
+  });
+  
+
+fs.writeFileSync(backupPath, JSON.stringify(currentBackup, null, 2), "utf-8");
 
 // ✅ 서버 시작
 app.listen(PORT, () => {
