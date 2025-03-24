@@ -13,7 +13,7 @@ app.use(express.json());
 
 app.use(
   basicAuth({
-    users: { BBI0K: "Bruker_2025" },
+    users: { BBIOK: "Bruker_2025" },
     challenge: true,
   })
 );
