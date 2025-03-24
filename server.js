@@ -57,7 +57,9 @@ app.get("/excel/:sheet/value/:value", basicAuthMiddleware, (req, res) => {
   if (!worksheet) return res.status(404).json({ error: `시트 ${sheet} 없음` });
 
   const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: "" });
-  const matchedRow = jsonData.filter(row => String(row["Part#"]).toLowerCase() === value.toLowerCase());
+  const firstCol = Object.keys(jsonData[0])[0]; // ✅ 첫 번째 열 이름 가져오기
+  const matchedRow = jsonData.filter(row => String(row[firstCol]).toLowerCase() === value.toLowerCase());
+
 
   if (matchedRow.length === 1) {
     return res.json(matchedRow[0]);
