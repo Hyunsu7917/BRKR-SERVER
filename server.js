@@ -87,12 +87,12 @@ app.post("/api/update-part-excel", basicAuthMiddleware, (req, res) => {
     const jsonData = xlsx.utils.sheet_to_json(sheet, { defval: "" });
 
     // Part# + Serial# 로 정확히 일치하는 행 찾기
-    const rowIndex = jsonData.findIndex(
-      row =>
-        String(row["Part#"]).toLowerCase() === Part.toLowerCase() &&
-        String(row["Serial #"]) === Serial
+    const rowIndex = jsonData.findIndex(row =>
+      row["Part#"] && row["Serial #"] &&
+      String(row["Part#"]).toLowerCase() === String(Part).toLowerCase() &&
+      String(row["Serial #"]) === String(Serial)
     );
-
+    
     if (rowIndex === -1) return res.status(404).json({ error: "해당 부품을 찾을 수 없습니다." });
 
     // 데이터 업데이트
