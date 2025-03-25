@@ -7,6 +7,13 @@ const xlsx = require("xlsx");
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+const sshKeyPath = '/opt/render/.ssh/render_deploy_key';
+if (process.env.SSH_PRIVATE_KEY && !fs.existsSync(sshKeyPath)) {
+  fs.mkdirSync('/opt/render/.ssh', { recursive: true });
+  fs.writeFileSync(sshKeyPath, process.env.SSH_PRIVATE_KEY + '\n', { mode: 0o600 });
+  console.log("✅ SSH 키 파일 저장 완료");
+}
+
 
 app.use(cors());
 app.use(express.json());
@@ -117,15 +124,14 @@ app.post("/api/update-part-excel", basicAuthMiddleware, (req, res) => {
     const { exec } = require("child_process");
 
     const gitSetupCommand = `
-      git remote add origin git@github.com:Hyunsu7917/BRKR-SERVER.git && \
-      git config user.name "brkr-server" && \
-      git config user.email "keyower@gmail.com" && \
-      git add assets/usage-backup.json assets/Part.xlsx && \
-      git commit -m "🔄 backup update" && \
+      git config user.name "brkr-server" &&
+      git config user.email "keyower@gmail.com" &&
+      git add assets/usage-backup.json assets/Part.xlsx &&
+      git commit -m "🔄 backup update" &&
       git push origin main
     `;
 
-    exec(gitSetupCommand, {  // ✅ 여기 수정됨
+    exec(gitSetupCommand, {
       cwd: process.cwd(),
       env: {
         ...process.env,
@@ -140,6 +146,7 @@ app.post("/api/update-part-excel", basicAuthMiddleware, (req, res) => {
         console.log(stdout);
       }
     });
+
     
   
 
