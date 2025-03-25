@@ -28,27 +28,25 @@ try {
     ...process.env,
     GIT_SSH_COMMAND: 'ssh -i ~/.ssh/render_deploy_key -o StrictHostKeyChecking=no',
   };
-  
+
   execSync("git init", { cwd: process.cwd(), env: gitEnv });
+
+  try {
+    execSync("git remote remove origin", { cwd: process.cwd(), env: gitEnv });
+    console.log("🧹 기존 origin 제거 완료");
+  } catch {}
+
   execSync("git remote add origin git@github.com:Hyunsu7917/BRKR-SERVER.git", {
     cwd: process.cwd(),
     env: gitEnv,
   });
+
   execSync("git pull origin main", { cwd: process.cwd(), env: gitEnv });
-  
   console.log("✅ Git init & origin 등록 + 최신 내용 pull 완료");
 } catch (err) {
   console.error("⚠️ Git init/pull 오류:", err.message);
 }
-// ✅ Git 초기화 및 pull
-try {
-  execSync("git init", { cwd: process.cwd() });
-  execSync("git remote add origin git@github.com:Hyunsu7917/BRKR-SERVER.git", { cwd: process.cwd() });
-  execSync("git pull origin main", { cwd: process.cwd() }); // ✅ 요 줄 추가!
-  console.log("✅ Git init & origin 등록 + 최신 내용 pull 완료");
-} catch (err) {
-  console.error("⚠️ Git init/pull 오류:", err.message);
-}
+
 
 app.use(cors());
 app.use(express.json());
