@@ -163,6 +163,8 @@ app.post("/api/update-part-excel", basicAuthMiddleware, (req, res) => {
 
     // ✅ Git push만 수행
     try {
+      execSync('git config user.name "brkr-server"', { cwd: process.cwd() });
+      execSync('git config user.email "kc7917@naver.com"', { cwd: process.cwd() });
       execSync(`git add assets/Part.xlsx`, {
         cwd: process.cwd(),
         env: {
