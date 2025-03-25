@@ -34,7 +34,9 @@ try {
   try {
     execSync("git remote remove origin", { cwd: process.cwd(), env: gitEnv });
     console.log("🧹 기존 origin 제거 완료");
-  } catch {}
+  } catch {
+    console.log("ℹ️ origin 없음 → 제거 생략");
+  }
 
   execSync("git remote add origin git@github.com:Hyunsu7917/BRKR-SERVER.git", {
     cwd: process.cwd(),
