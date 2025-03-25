@@ -13,6 +13,15 @@ if (process.env.SSH_PRIVATE_KEY && !fs.existsSync(sshKeyPath)) {
   fs.writeFileSync(sshKeyPath, process.env.SSH_PRIVATE_KEY + '\n', { mode: 0o600 });
   console.log("✅ SSH 키 파일 저장 완료");
 }
+const { execSync } = require("child_process");
+
+try {
+  execSync("git init", { cwd: process.cwd() });
+  execSync("git remote add origin git@github.com:Hyunsu7917/BRKR-SERVER.git", { cwd: process.cwd() });
+  console.log("✅ Git init & origin 등록 완료");
+} catch (err) {
+  console.error("⚠️ Git 초기화/remote 등록 에러 (이미 있을 수 있음):", err.message);
+}
 
 
 app.use(cors());
