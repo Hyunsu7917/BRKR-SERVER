@@ -116,12 +116,13 @@ app.post("/api/update-part-excel", basicAuthMiddleware, (req, res) => {
 
     const { exec } = require("child_process");
 
-    const gitCommands = `
+    const gitSetupCommand = `
+      git remote add origin git@github.com:Hyunsu7917/BRKR-SERVER.git && \
       git config user.name "brkr-server" && \
       git config user.email "brkr-server@bruker.com" && \
       git add assets/usage-backup.json assets/Part.xlsx && \
       git commit -m "🔄 backup update" && \
-      git push
+      git push origin main
     `;
 
     exec(gitCommands, {
