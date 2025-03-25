@@ -125,7 +125,7 @@ app.post("/api/update-part-excel", basicAuthMiddleware, (req, res) => {
       git push origin main
     `;
 
-    exec(gitCommands, {
+    exec(gitSetupCommand, {  // ✅ 여기 수정됨
       cwd: process.cwd(),
       env: {
         ...process.env,
@@ -140,6 +140,7 @@ app.post("/api/update-part-excel", basicAuthMiddleware, (req, res) => {
         console.log(stdout);
       }
     });
+    
   
 
     return res.json({ success: true });
