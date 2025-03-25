@@ -14,6 +14,7 @@ if (process.env.SSH_PRIVATE_KEY && !fs.existsSync(sshKeyPath)) {
   fs.writeFileSync(sshKeyPath, process.env.SSH_PRIVATE_KEY + '\n', { mode: 0o600 });
   console.log("✅ SSH 키 파일 저장 완료");
 }
+const { exec, execSync } = require("child_process");
 // ✅ GitHub 호스트 등록
 try {
   execSync("ssh-keyscan github.com >> ~/.ssh/known_hosts", { stdio: "inherit" });
@@ -39,8 +40,6 @@ try {
 } catch (err) {
   console.error("⚠️ Git init/pull 오류:", err.message);
 }
-
-const { execSync } = require("child_process");
 // ✅ Git 초기화 및 pull
 try {
   execSync("git init", { cwd: process.cwd() });
