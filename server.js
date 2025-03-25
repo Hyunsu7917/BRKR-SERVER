@@ -69,6 +69,7 @@ app.get("/excel/:sheet/value/:value", basicAuthMiddleware, (req, res) => {
 });
 // ✅ 국내 재고 엑셀에 사용 기록 반영하기
 app.post("/api/update-part-excel", basicAuthMiddleware, (req, res) => {
+  console.log("📩 Received update request", req.body);
   const filePath = path.join(__dirname, "assets", "Part.xlsx");
   if (!fs.existsSync(filePath)) return res.status(404).json({ error: "파일 없음" });
 
