@@ -120,6 +120,48 @@ app.post("/api/update-part-excel", basicAuthMiddleware, (req, res) => {
     return res.status(500).json({ error: "엑셀 저장 중 오류 발생" });
   }
 });
+app.get("/api/sync-usage-to-excel", async (req, res) => {
+  try {
+    const backupPath = path.join(__dirname, "assets", "usage-backup.json");
+    const filePath = path.join(__dirname, "assets", "Part.xlsx");
+
+    // 파일 존재 확인
+    if (!fs.existsSync(backupPath)) {
+      return res.status(404).json({ error: "백업 파일이 존재하지 않습니다." });
+    }
+
+    // 백업 데이터와 엑셀 파일 불러오기
+    const backupData = JSON.parse(fs.readFileSync(backupPath, "utf-8"));
+    const workbook = xlsx.readFile(filePath);
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const jsonData = xlsx.utils.sheet_to_json(sheet, { defval: "" });
+
+    // 덮어쓰기 로직
+    backupData.forEach(backup => {
+      const rowIndex = jsonData.findIndex(row =>
+        String(row["Part#"]).toLowerCase() === String(backup["Part#"]).toLowerCase() &&
+        String(row["Serial #"]) === String(backup["Serial #"])
+      );
+
+      if (rowIndex !== -1) {
+        jsonData[rowIndex]["Remark"] = backup.Remark || "";
+        jsonData[rowIndex]["사용처"] = backup.UsageNote || "";
+      }
+    });
+
+    // 다시 저장
+    const newSheet = xlsx.utils.json_to_sheet(jsonData);
+    workbook.Sheets[workbook.SheetNames[0]] = newSheet;
+    fs.writeFileSync(filePath, xlsx.write(workbook, { type: "buffer", bookType: "xlsx" }));
+
+    console.log("✅ 로컬 Part.xlsx 덮어쓰기 완료!");
+
+    return res.json({ success: true, message: "사용기록이 엑셀에 반영되었습니다." });
+  } catch (err) {
+    console.error("⛔️ 동기화 오류:", err);
+    return res.status(500).json({ error: "사용기록 반영 중 오류 발생" });
+  }
+});
 
 // ✅ 서버 시작
 app.listen(PORT, () => {
