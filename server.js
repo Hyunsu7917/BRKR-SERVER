@@ -157,6 +157,10 @@ app.post("/api/update-part-excel", basicAuthMiddleware, (req, res) => {
 
     // ✅ Git push만 수행 (init/pull은 이미 서버 부팅 시 수행됨)
     try {
+      // 🧑 Git 사용자 정보 설정 (한 번만 실행해도 됨)
+      execSync('git config user.name "brkr-server"', { cwd: process.cwd() });
+      execSync('git config user.email "keyower159@gmail.com"', { cwd: process.cwd() });
+    
       execSync("git add assets/usage-backup.json assets/Part.xlsx", {
         cwd: process.cwd(),
         env: {
@@ -164,7 +168,7 @@ app.post("/api/update-part-excel", basicAuthMiddleware, (req, res) => {
           GIT_SSH_COMMAND: 'ssh -i ~/.ssh/render_deploy_key -o StrictHostKeyChecking=no',
         },
       });
-
+    
       execSync('git commit -m "🔄 backup update"', {
         cwd: process.cwd(),
         env: {
@@ -172,7 +176,7 @@ app.post("/api/update-part-excel", basicAuthMiddleware, (req, res) => {
           GIT_SSH_COMMAND: 'ssh -i ~/.ssh/render_deploy_key -o StrictHostKeyChecking=no',
         },
       });
-
+    
       execSync("git push origin main", {
         cwd: process.cwd(),
         env: {
@@ -180,7 +184,7 @@ app.post("/api/update-part-excel", basicAuthMiddleware, (req, res) => {
           GIT_SSH_COMMAND: 'ssh -i ~/.ssh/render_deploy_key -o StrictHostKeyChecking=no',
         },
       });
-
+    
       console.log("✅ Git push 성공!");
     } catch (err) {
       console.error("❌ Git push 실패:", err.message);
