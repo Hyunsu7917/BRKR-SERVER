@@ -168,8 +168,8 @@ app.get("/api/sync-usage-to-excel", async (req, res) => {
 // 🔁 서버 부팅 시 백업 데이터를 엑셀에 자동 반영
 const restoreExcelFromBackup = () => {
   try {
+    console.log("🟠 restoreExcelFromBackup 시작");
     const backupPath = path.join(__dirname, "assets", "usage-backup.json");
-
     if (!fs.existsSync(backupPath)) return;
 
     const backupData = JSON.parse(fs.readFileSync(backupPath, "utf-8"));
