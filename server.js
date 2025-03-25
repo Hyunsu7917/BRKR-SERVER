@@ -184,6 +184,8 @@ app.post("/api/update-part-excel", basicAuthMiddleware, (req, res) => {
           GIT_SSH_COMMAND: 'ssh -i ~/.ssh/render_deploy_key -o StrictHostKeyChecking=no',
         },
       });
+      const log = execSync('git log --oneline -n 5').toString();
+      console.log("📜 최근 커밋 로그:\n", log);
       execSync(`git push origin main`, {
         cwd: process.cwd(),
         env: {
