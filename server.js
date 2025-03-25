@@ -202,6 +202,21 @@ const restoreExcelFromBackup = () => {
     console.error("❌ 복구 실패:", err);
   }
 };
+app.get("/api/show-backup", (req, res) => {
+  try {
+    const backupPath = path.join(__dirname, "assets", "usage-backup.json");
+
+    if (!fs.existsSync(backupPath)) {
+      return res.status(404).json({ error: "백업 파일이 존재하지 않습니다." });
+    }
+
+    const backupData = JSON.parse(fs.readFileSync(backupPath, "utf-8"));
+    return res.json({ success: true, data: backupData });
+  } catch (err) {
+    console.error("❌ 백업 파일 조회 오류:", err);
+    return res.status(500).json({ error: "백업 파일을 불러오는 중 오류 발생" });
+  }
+});
 
 restoreExcelFromBackup(); // 💡 서버 실행 시 바로 동작!
 
