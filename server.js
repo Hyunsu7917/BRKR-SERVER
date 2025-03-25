@@ -137,13 +137,14 @@ app.post("/api/update-part-excel", basicAuthMiddleware, (req, res) => {
         ...process.env,
         GIT_SSH_COMMAND: 'ssh -i ~/.ssh/render_deploy_key -o StrictHostKeyChecking=no',
       };
-
+      
       execSync("git init", { cwd: process.cwd(), env: gitEnv });
       execSync("git remote add origin git@github.com:Hyunsu7917/BRKR-SERVER.git", {
         cwd: process.cwd(),
         env: gitEnv,
       });
-      execSync("git pull origin main", { cwd: process.cwd(), env: gitEnv }); // ✅ 여기도 같이!
+      execSync("git pull origin main", { cwd: process.cwd(), env: gitEnv });
+      
       console.log("✅ Git init & origin 등록 + 최신 내용 pull 완료");
     } catch (err) {
       console.error("⚠️ Git init/pull 오류:", err.message);
