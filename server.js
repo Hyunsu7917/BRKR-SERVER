@@ -125,18 +125,18 @@ app.get("/api/sync-usage-to-excel", async (req, res) => {
     const backupPath = path.join(__dirname, "assets", "usage-backup.json");
     const filePath = path.join(__dirname, "assets", "Part.xlsx");
 
-    // 파일 존재 확인
+    // 백업 파일 존재 확인
     if (!fs.existsSync(backupPath)) {
       return res.status(404).json({ error: "백업 파일이 존재하지 않습니다." });
     }
 
-    // 백업 데이터와 엑셀 파일 불러오기
+    // 파일 불러오기
     const backupData = JSON.parse(fs.readFileSync(backupPath, "utf-8"));
     const workbook = xlsx.readFile(filePath);
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     const jsonData = xlsx.utils.sheet_to_json(sheet, { defval: "" });
 
-    // 덮어쓰기 로직
+    // 백업 내용을 엑셀 데이터에 반영
     backupData.forEach(backup => {
       const rowIndex = jsonData.findIndex(row =>
         String(row["Part#"]).toLowerCase() === String(backup["Part#"]).toLowerCase() &&
@@ -151,8 +151,9 @@ app.get("/api/sync-usage-to-excel", async (req, res) => {
 
     // 다시 저장
     const newSheet = xlsx.utils.json_to_sheet(jsonData);
-    console.log("🟡 Buffer 생성 완료");
     workbook.Sheets[workbook.SheetNames[0]] = newSheet;
+
+    console.log("🟡 Buffer 생성 완료");
     fs.writeFileSync(filePath, xlsx.write(workbook, { type: "buffer", bookType: "xlsx" }));
 
     console.log("✅ 로컬 Part.xlsx 덮어쓰기 완료!");
@@ -163,9 +164,12 @@ app.get("/api/sync-usage-to-excel", async (req, res) => {
     return res.status(500).json({ error: "사용기록 반영 중 오류 발생" });
   }
 });
+
 // 🔁 서버 부팅 시 백업 데이터를 엑셀에 자동 반영
 const restoreExcelFromBackup = () => {
   try {
+    const backupPath = path.join(__dirname, "assets", "usage-backup.json");
+
     if (!fs.existsSync(backupPath)) return;
 
     const backupData = JSON.parse(fs.readFileSync(backupPath, "utf-8"));
