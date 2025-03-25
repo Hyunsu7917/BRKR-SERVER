@@ -176,7 +176,8 @@ app.post("/api/update-part-excel", basicAuthMiddleware, (req, res) => {
         },
       });
       console.log("깃에드 실행함!")
-      execSync(`git commit -m "backup update" --allow-empty`, {
+      const now = new Date().toISOString();
+      execSync(`git commit -m "backup update: ${now}" --allow-empty`, {
         cwd: process.cwd(),
         env: {
           ...process.env,
