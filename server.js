@@ -247,6 +247,7 @@ app.get("/api/sync-usage-to-excel", async (req, res) => {
 const restoreExcelFromBackup = () => {
   try {
     console.log("🟠 restoreExcelFromBackup 시작");
+    const filePath = path.join(__dirname, "assets", "Part.xlsx");
     const backupPath = path.join(__dirname, "assets", "usage-backup.json");
     if (!fs.existsSync(backupPath)) return;
 
