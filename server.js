@@ -111,6 +111,9 @@ app.post("/api/update-part-excel", basicAuthMiddleware, (req, res) => {
 
     fs.writeFileSync(backupPath, JSON.stringify(currentBackup, null, 2), "utf-8");
 
+    fs.writeFileSync(filePath, xlsx.write(workbook, { type: "buffer", bookType: "xlsx" }));
+    console.log("📁 로컬 Part.xlsx 저장 완료:", filePath);
+
     return res.json({ success: true });
   } catch (err) {
     console.error("엑셀 저장 실패:", err);
