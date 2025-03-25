@@ -18,11 +18,11 @@ const { execSync } = require("child_process");
 try {
   execSync("git init", { cwd: process.cwd() });
   execSync("git remote add origin git@github.com:Hyunsu7917/BRKR-SERVER.git", { cwd: process.cwd() });
-  console.log("✅ Git init & origin 등록 완료");
+  execSync("git pull origin main", { cwd: process.cwd() }); // ✅ 요 줄 추가!
+  console.log("✅ Git init & origin 등록 + 최신 내용 pull 완료");
 } catch (err) {
-  console.error("⚠️ Git 초기화/remote 등록 에러 (이미 있을 수 있음):", err.message);
+  console.error("⚠️ Git init/pull 오류:", err.message);
 }
-
 
 app.use(cors());
 app.use(express.json());
