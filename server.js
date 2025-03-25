@@ -7,9 +7,9 @@ const xlsx = require("xlsx");
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-const sshKeyPath = '/opt/render/.ssh/render_deploy_key';
+const sshKeyPath = "/opt/render/.ssh/render_deploy_key";
 if (process.env.SSH_PRIVATE_KEY && !fs.existsSync(sshKeyPath)) {
-  fs.mkdirSync('/opt/render/.ssh', { recursive: true });
+  fs.mkdirSync("/opt/render/.ssh", { recursive: true });
   fs.writeFileSync(sshKeyPath, process.env.SSH_PRIVATE_KEY + '\n', { mode: 0o600 });
   console.log("✅ SSH 키 파일 저장 완료");
 }
