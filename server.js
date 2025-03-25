@@ -156,21 +156,35 @@ app.post("/api/update-part-excel", basicAuthMiddleware, (req, res) => {
     fs.writeFileSync(backupPath, JSON.stringify(currentBackup, null, 2), "utf-8");
 
     // ✅ Git push만 수행 (init/pull은 이미 서버 부팅 시 수행됨)
-    exec(gitSetupCommand, {
-      cwd: process.cwd(),
-      env: {
-        ...process.env,
-        GIT_SSH_COMMAND: 'ssh -i ~/.ssh/render_deploy_key -o StrictHostKeyChecking=no',
-      },
-    }, (err, stdout, stderr) => {
-      if (err) {
-        console.error("❌ Git push 실패:", err.message);
-        console.error(stderr);
-      } else {
-        console.log("✅ Git push 성공!");
-        console.log(stdout);
-      }
-    });
+    try {
+      execSync("git add assets/usage-backup.json assets/Part.xlsx", {
+        cwd: process.cwd(),
+        env: {
+          ...process.env,
+          GIT_SSH_COMMAND: 'ssh -i ~/.ssh/render_deploy_key -o StrictHostKeyChecking=no',
+        },
+      });
+
+      execSync('git commit -m "🔄 backup update"', {
+        cwd: process.cwd(),
+        env: {
+          ...process.env,
+          GIT_SSH_COMMAND: 'ssh -i ~/.ssh/render_deploy_key -o StrictHostKeyChecking=no',
+        },
+      });
+
+      execSync("git push origin main", {
+        cwd: process.cwd(),
+        env: {
+          ...process.env,
+          GIT_SSH_COMMAND: 'ssh -i ~/.ssh/render_deploy_key -o StrictHostKeyChecking=no',
+        },
+      });
+
+      console.log("✅ Git push 성공!");
+    } catch (err) {
+      console.error("❌ Git push 실패:", err.message);
+    }
 
     return res.json({ success: true });
   } catch (err) {
@@ -178,6 +192,7 @@ app.post("/api/update-part-excel", basicAuthMiddleware, (req, res) => {
     return res.status(500).json({ error: "엑셀 저장 중 오류 발생" });
   }
 });
+
 
 app.get("/api/sync-usage-to-excel", async (req, res) => {
   try {
