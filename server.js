@@ -115,6 +115,13 @@ app.post("/api/update-part-excel", basicAuthMiddleware, (req, res) => {
     console.log("📁 로컬 Part.xlsx 저장 완료:", filePath);
 
     const exec = require("child_process").exec;
+    const gitCommands = `
+      git config user.name "brkr-server"
+      git config user.email "keyower159@gmail.com"
+      git add assets/usage-backup.json assets/Part.xlsx
+      git commit -m "🔄 backup update"
+      git push
+    `;
 
     exec("git add assets/usage-backup.json && git commit -m 'backup update' && git push", {
       cwd: process.cwd(),
