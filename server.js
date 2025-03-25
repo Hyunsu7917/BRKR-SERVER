@@ -7,14 +7,41 @@ const xlsx = require("xlsx");
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+// ✅ SSH 키 저장
 const sshKeyPath = "/opt/render/.ssh/render_deploy_key";
 if (process.env.SSH_PRIVATE_KEY && !fs.existsSync(sshKeyPath)) {
   fs.mkdirSync("/opt/render/.ssh", { recursive: true });
   fs.writeFileSync(sshKeyPath, process.env.SSH_PRIVATE_KEY + '\n', { mode: 0o600 });
   console.log("✅ SSH 키 파일 저장 완료");
 }
-const { execSync } = require("child_process");
+// ✅ GitHub 호스트 등록
+try {
+  execSync("ssh-keyscan github.com >> ~/.ssh/known_hosts", { stdio: "inherit" });
+  console.log("🔐 GitHub 호스트 키 등록 완료");
+} catch (err) {
+  console.error("❌ 호스트 키 등록 실패:", err.message);
+}
+// ✅ Git 환경 설정
+try {
+  const gitEnv = {
+    ...process.env,
+    GIT_SSH_COMMAND: 'ssh -i ~/.ssh/render_deploy_key -o StrictHostKeyChecking=no',
+  };
+  
+  execSync("git init", { cwd: process.cwd(), env: gitEnv });
+  execSync("git remote add origin git@github.com:Hyunsu7917/BRKR-SERVER.git", {
+    cwd: process.cwd(),
+    env: gitEnv,
+  });
+  execSync("git pull origin main", { cwd: process.cwd(), env: gitEnv });
+  
+  console.log("✅ Git init & origin 등록 + 최신 내용 pull 완료");
+} catch (err) {
+  console.error("⚠️ Git init/pull 오류:", err.message);
+}
 
+const { execSync } = require("child_process");
+// ✅ Git 초기화 및 pull
 try {
   execSync("git init", { cwd: process.cwd() });
   execSync("git remote add origin git@github.com:Hyunsu7917/BRKR-SERVER.git", { cwd: process.cwd() });
@@ -92,6 +119,7 @@ app.post("/api/update-part-excel", basicAuthMiddleware, (req, res) => {
   const { ["Part#"]: Part, ["Serial #"]: Serial, PartName, Remark, UsageNote } = req.body;
 
   try {
+    // ✅ 엑셀 업데이트
     const workbook = xlsx.readFile(filePath);
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     const jsonData = xlsx.utils.sheet_to_json(sheet, { defval: "" });
@@ -109,8 +137,9 @@ app.post("/api/update-part-excel", basicAuthMiddleware, (req, res) => {
     const newSheet = xlsx.utils.json_to_sheet(jsonData);
     workbook.Sheets[workbook.SheetNames[0]] = newSheet;
     xlsx.writeFile(workbook, filePath);
+    console.log("📁 로컬 Part.xlsx 저장 완료:", filePath);
 
-    // ✅ 백업 파일도 이 위치에서 만들어줌
+    // ✅ 백업 파일 저장
     const backupPath = path.join(__dirname, "assets", "usage-backup.json");
     const currentBackup = fs.existsSync(backupPath)
       ? JSON.parse(fs.readFileSync(backupPath, "utf-8"))
@@ -127,31 +156,7 @@ app.post("/api/update-part-excel", basicAuthMiddleware, (req, res) => {
 
     fs.writeFileSync(backupPath, JSON.stringify(currentBackup, null, 2), "utf-8");
 
-    fs.writeFileSync(filePath, xlsx.write(workbook, { type: "buffer", bookType: "xlsx" }));
-    console.log("📁 로컬 Part.xlsx 저장 완료:", filePath);
-
-    const { execSync } = require("child_process");
-
-    try {
-      execSync('ssh-keyscan github.com >> ~/.ssh/known_hosts');
-
-      const gitEnv = {
-        ...process.env,
-        GIT_SSH_COMMAND: 'ssh -i ~/.ssh/render_deploy_key -o StrictHostKeyChecking=no',
-      };
-      
-      execSync("git init", { cwd: process.cwd(), env: gitEnv });
-      execSync("git remote add origin git@github.com:Hyunsu7917/BRKR-SERVER.git", {
-        cwd: process.cwd(),
-        env: gitEnv,
-      });
-      execSync("git pull origin main", { cwd: process.cwd(), env: gitEnv });
-      
-      console.log("✅ Git init & origin 등록 + 최신 내용 pull 완료");
-    } catch (err) {
-      console.error("⚠️ Git init/pull 오류:", err.message);
-    }
-
+    // ✅ Git push만 수행 (init/pull은 이미 서버 부팅 시 수행됨)
     exec(gitSetupCommand, {
       cwd: process.cwd(),
       env: {
@@ -168,15 +173,13 @@ app.post("/api/update-part-excel", basicAuthMiddleware, (req, res) => {
       }
     });
 
-    
-  
-
     return res.json({ success: true });
   } catch (err) {
     console.error("엑셀 저장 실패:", err);
     return res.status(500).json({ error: "엑셀 저장 중 오류 발생" });
   }
 });
+
 app.get("/api/sync-usage-to-excel", async (req, res) => {
   try {
     const backupPath = path.join(__dirname, "assets", "usage-backup.json");
