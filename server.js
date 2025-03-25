@@ -209,7 +209,8 @@ app.get("/api/sync-usage-to-excel", async (req, res) => {
     }
 
     // 파일 불러오기
-    const backupData = JSON.parse(fs.readFileSync(backupPath, "utf-8"));
+    const backupRaw = fs.readFileSync(backupPath, "utf-8").trim();
+    const backupData = backupRaw ? JSON.parse(backupRaw) : [];
     const workbook = xlsx.readFile(filePath);
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     const jsonData = xlsx.utils.sheet_to_json(sheet, { defval: "" });

@@ -1,13 +1,1 @@
-{
-    "success": true,
-    "data": [
-        {
-            "Part#": "A123",
-            "Serial #": 4,
-            "PartName": "AA",
-            "Remark": "gg",
-            "UsageNote": "",
-            "Timestamp": "2025-03-25T14:42:03.982Z"
-        }
-    ]
-}
+[]
