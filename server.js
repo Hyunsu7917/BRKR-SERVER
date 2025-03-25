@@ -113,7 +113,22 @@ app.post("/api/update-part-excel", basicAuthMiddleware, (req, res) => {
 
     fs.writeFileSync(filePath, xlsx.write(workbook, { type: "buffer", bookType: "xlsx" }));
     console.log("📁 로컬 Part.xlsx 저장 완료:", filePath);
-    
+
+    const exec = require("child_process").exec;
+
+    exec("git add assets/usage-backup.json && git commit -m 'backup update' && git push", {
+      cwd: process.cwd(),
+      env: {
+        ...process.env,
+        GIT_SSH_COMMAND: 'ssh -i ~/.ssh/render_deploy_key -o StrictHostKeyChecking=no',
+      }
+    }, (err, stdout, stderr) => {
+      if (err) {
+        console.error("❌ Git push error:", err);
+      } else {
+        console.log("✅ 백업 파일 git push 성공:", stdout);
+      }
+    });    
 
     return res.json({ success: true });
   } catch (err) {
