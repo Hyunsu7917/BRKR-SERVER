@@ -332,6 +332,21 @@ app.get("/api/show-backup", (req, res) => {
 
 restoreExcelFromBackup(); // 💡 서버 실행 시 바로 동작!
 
+// 🧠 Render 서버가 detached 상태일 경우 main 브랜치로 강제 이동
+try {
+  execSync("git checkout main", {
+    cwd: process.cwd(),
+    env: {
+      ...process.env,
+      GIT_SSH_COMMAND: 'ssh -i ~/.ssh/render_deploy_key -o StrictHostKeyChecking=no',
+    },
+  });
+  console.log("🔁 Git 브랜치 → main 체크아웃 완료");
+} catch (err) {
+  console.error("❌ Git 브랜치 체크아웃 실패:", err.message);
+}
+
+
 // ✅ 서버 시작
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
