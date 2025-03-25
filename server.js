@@ -161,6 +161,32 @@ app.post("/api/update-part-excel", basicAuthMiddleware, (req, res) => {
 
     fs.writeFileSync(backupPath, JSON.stringify(currentBackup, null, 2), "utf-8");
 
+    const { execSync } = require("child_process");
+
+    try {
+      const branch = execSync("git branch", {
+        cwd: process.cwd(),
+        env: {
+          ...process.env,
+          GIT_SSH_COMMAND: 'ssh -i ~/.ssh/render_deploy_key -o StrictHostKeyChecking=no',
+        },
+      }).toString();
+
+      const status = execSync("git status", {
+        cwd: process.cwd(),
+        env: {
+          ...process.env,
+          GIT_SSH_COMMAND: 'ssh -i ~/.ssh/render_deploy_key -o StrictHostKeyChecking=no',
+        },
+      }).toString();
+
+      console.log("📂 현재 브랜치 상태:\n", branch);
+      console.log("📋 Git 상태:\n", status);
+    } catch (err) {
+      console.error("❌ Git 상태 확인 실패:", err.message);
+    }
+
+
     const diffStatus = execSync('git status --short').toString();
     console.log("🧪 Git 변경 감지 상태:\n", diffStatus);
 
