@@ -113,6 +113,7 @@ app.post("/api/update-part-excel", basicAuthMiddleware, (req, res) => {
 
     fs.writeFileSync(filePath, xlsx.write(workbook, { type: "buffer", bookType: "xlsx" }));
     console.log("📁 로컬 Part.xlsx 저장 완료:", filePath);
+    
 
     return res.json({ success: true });
   } catch (err) {
@@ -176,6 +177,10 @@ const restoreExcelFromBackup = () => {
     const workbook = xlsx.readFile(filePath);
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     const jsonData = xlsx.utils.sheet_to_json(sheet, { defval: "" });
+
+    console.log("🟡 백업 데이터 개수:", backupData.length);
+    console.log("🟡 백업 내용 미리보기:", JSON.stringify(backupData[0], null, 2));
+    console.log("🟡 엑셀 행 수:", jsonData.length);
 
     for (const backup of backupData) {
       const rowIndex = jsonData.findIndex(
