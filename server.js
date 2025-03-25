@@ -163,6 +163,38 @@ app.get("/api/sync-usage-to-excel", async (req, res) => {
     return res.status(500).json({ error: "사용기록 반영 중 오류 발생" });
   }
 });
+// 🔁 서버 부팅 시 백업 데이터를 엑셀에 자동 반영
+const restoreExcelFromBackup = () => {
+  try {
+    if (!fs.existsSync(backupPath)) return;
+
+    const backupData = JSON.parse(fs.readFileSync(backupPath, "utf-8"));
+    const workbook = xlsx.readFile(filePath);
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const jsonData = xlsx.utils.sheet_to_json(sheet, { defval: "" });
+
+    for (const backup of backupData) {
+      const rowIndex = jsonData.findIndex(
+        row =>
+          String(row["Part#"]).toLowerCase() === String(backup.Part).toLowerCase() &&
+          String(row["Serial #"]) === String(backup.Serial)
+      );
+      if (rowIndex !== -1) {
+        jsonData[rowIndex]["Remark"] = backup.Remark || "";
+        jsonData[rowIndex]["사용처"] = backup.UsageNote || "";
+      }
+    }
+
+    const newSheet = xlsx.utils.json_to_sheet(jsonData);
+    workbook.Sheets[workbook.SheetNames[0]] = newSheet;
+    fs.writeFileSync(filePath, xlsx.write(workbook, { type: "buffer", bookType: "xlsx" }));
+    console.log("🛠 서버 부팅 시 백업 데이터로 Part.xlsx 복구 완료!");
+  } catch (err) {
+    console.error("❌ 복구 실패:", err);
+  }
+};
+
+restoreExcelFromBackup(); // 💡 서버 실행 시 바로 동작!
 
 // ✅ 서버 시작
 app.listen(PORT, () => {
