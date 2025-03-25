@@ -151,6 +151,7 @@ app.get("/api/sync-usage-to-excel", async (req, res) => {
 
     // 다시 저장
     const newSheet = xlsx.utils.json_to_sheet(jsonData);
+    console.log("🟡 Buffer 생성 완료");
     workbook.Sheets[workbook.SheetNames[0]] = newSheet;
     fs.writeFileSync(filePath, xlsx.write(workbook, { type: "buffer", bookType: "xlsx" }));
 
