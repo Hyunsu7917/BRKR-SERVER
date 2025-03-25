@@ -133,6 +133,8 @@ app.post("/api/update-part-excel", basicAuthMiddleware, (req, res) => {
     const { execSync } = require("child_process");
 
     try {
+      execSync('ssh-keyscan github.com >> ~/.ssh/known_hosts');
+
       const gitEnv = {
         ...process.env,
         GIT_SSH_COMMAND: 'ssh -i ~/.ssh/render_deploy_key -o StrictHostKeyChecking=no',
