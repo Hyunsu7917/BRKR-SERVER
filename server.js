@@ -114,28 +114,32 @@ app.post("/api/update-part-excel", basicAuthMiddleware, (req, res) => {
     fs.writeFileSync(filePath, xlsx.write(workbook, { type: "buffer", bookType: "xlsx" }));
     console.log("📁 로컬 Part.xlsx 저장 완료:", filePath);
 
-    const exec = require("child_process").exec;
+    const { exec } = require("child_process");
+
     const gitCommands = `
-      git config user.name "brkr-server"
-      git config user.email "keyower159@gmail.com"
-      git add assets/usage-backup.json assets/Part.xlsx
-      git commit -m "🔄 backup update"
+      git config user.name "brkr-server" && \
+      git config user.email "brkr-server@bruker.com" && \
+      git add assets/usage-backup.json assets/Part.xlsx && \
+      git commit -m "🔄 backup update" && \
       git push
     `;
 
-    exec("git add assets/usage-backup.json && git commit -m 'backup update' && git push", {
+    exec(gitCommands, {
       cwd: process.cwd(),
       env: {
         ...process.env,
         GIT_SSH_COMMAND: 'ssh -i ~/.ssh/render_deploy_key -o StrictHostKeyChecking=no',
-      }
+      },
     }, (err, stdout, stderr) => {
       if (err) {
-        console.error("❌ Git push error:", err);
+        console.error("❌ Git push 실패:", err.message);
+        console.error(stderr);
       } else {
-        console.log("✅ 백업 파일 git push 성공:", stdout);
+        console.log("✅ Git push 성공!");
+        console.log(stdout);
       }
-    });    
+    });
+  
 
     return res.json({ success: true });
   } catch (err) {
