@@ -95,7 +95,7 @@ app.post("/api/update-part-excel", basicAuthMiddleware, (req, res) => {
     xlsx.writeFile(workbook, filePath);
 
     // ✅ 백업 파일도 이 위치에서 만들어줌
-    const backupPath = path.join(__dirname, "usage-backup.json");
+    const backupPath = path.join(__dirname, "assets", "usage-backup.json");
     const currentBackup = fs.existsSync(backupPath)
       ? JSON.parse(fs.readFileSync(backupPath, "utf-8"))
       : [];
