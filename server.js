@@ -161,6 +161,9 @@ app.post("/api/update-part-excel", basicAuthMiddleware, (req, res) => {
 
     fs.writeFileSync(backupPath, JSON.stringify(currentBackup, null, 2), "utf-8");
 
+    const diffStatus = execSync('git status --short').toString();
+    console.log("🧪 Git 변경 감지 상태:\n", diffStatus);
+
     // ✅ Git push만 수행
     try {
       execSync('git config user.name "brkr-server"', { cwd: process.cwd() });      
@@ -173,7 +176,7 @@ app.post("/api/update-part-excel", basicAuthMiddleware, (req, res) => {
         },
       });
       console.log("깃에드 실행함!")
-      execSync(`git commit -m "🔄 backup update"`, {
+      execSync(`git commit -m "backup update" --allow-empty`, {
         cwd: process.cwd(),
         env: {
           ...process.env,
