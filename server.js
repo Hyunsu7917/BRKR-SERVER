@@ -138,11 +138,17 @@ app.post("/api/update-part-excel", basicAuthMiddleware, (req, res) => {
     xlsx.writeFile(workbook, filePath);
     console.log("📁 로컬 Part.xlsx 저장 완료:", filePath);
 
-    // ✅ 백업 파일 저장
+    // ✅ 백업 파일 저장 + 500개 초과 시 정리
     const backupPath = path.join(__dirname, "assets", "usage-backup.json");
     const currentBackup = fs.existsSync(backupPath)
       ? JSON.parse(fs.readFileSync(backupPath, "utf-8"))
       : [];
+
+    // 🔥 500개 초과 시 오래된 기록 제거
+    if (currentBackup.length >= 500) {
+      const removeCount = currentBackup.length - 499;
+      currentBackup.splice(0, removeCount); // 앞에서 오래된 것부터 제거
+    }
 
     currentBackup.push({
       "Part#": Part,
@@ -155,36 +161,29 @@ app.post("/api/update-part-excel", basicAuthMiddleware, (req, res) => {
 
     fs.writeFileSync(backupPath, JSON.stringify(currentBackup, null, 2), "utf-8");
 
-    // ✅ Git push만 수행 (init/pull은 이미 서버 부팅 시 수행됨)
+    // ✅ Git push만 수행
     try {
-      // 🧑 Git 사용자 정보 설정 (한 번만 실행해도 됨)
-      execSync('git config user.name "brkr-server"', { cwd: process.cwd() });
-      execSync('git config user.email "keyower159@gmail.com"', { cwd: process.cwd() });
-    
-      execSync("git add assets/usage-backup.json assets/Part.xlsx", {
+      execSync(`git add assets/Part.xlsx`, {
         cwd: process.cwd(),
         env: {
           ...process.env,
           GIT_SSH_COMMAND: 'ssh -i ~/.ssh/render_deploy_key -o StrictHostKeyChecking=no',
         },
       });
-    
-      execSync('git commit -m "🔄 backup update"', {
+      execSync(`git commit -m "🔄 backup update"`, {
         cwd: process.cwd(),
         env: {
           ...process.env,
           GIT_SSH_COMMAND: 'ssh -i ~/.ssh/render_deploy_key -o StrictHostKeyChecking=no',
         },
       });
-    
-      execSync("git push origin main", {
+      execSync(`git push origin main`, {
         cwd: process.cwd(),
         env: {
           ...process.env,
           GIT_SSH_COMMAND: 'ssh -i ~/.ssh/render_deploy_key -o StrictHostKeyChecking=no',
         },
       });
-    
       console.log("✅ Git push 성공!");
     } catch (err) {
       console.error("❌ Git push 실패:", err.message);
@@ -196,7 +195,6 @@ app.post("/api/update-part-excel", basicAuthMiddleware, (req, res) => {
     return res.status(500).json({ error: "엑셀 저장 중 오류 발생" });
   }
 });
-
 
 app.get("/api/sync-usage-to-excel", async (req, res) => {
   try {
