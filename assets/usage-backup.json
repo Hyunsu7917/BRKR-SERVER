@@ -190,5 +190,77 @@
     "Remark": "PM1440",
     "UsageNote": "House5634",
     "Timestamp": "2025-03-26T05:40:43.325Z"
+  },
+  {
+    "Part#": "Z73436.1",
+    "Serial #": 2541,
+    "PartName": "SHIMCOIL BOSS3 STD S1 PLUG",
+    "Remark": "성균관대 CORE400꺼  수리해 온것",
+    "UsageNote": "봉근테스트",
+    "Timestamp": "2025-03-26T07:23:13.477Z"
+  },
+  {
+    "Part#": "Z73436.1",
+    "Serial #": 2541,
+    "PartName": "SHIMCOIL BOSS3 STD S1 PLUG",
+    "Remark": "성균관대 CORE400꺼  수리해 온것",
+    "UsageNote": "봉근테스트",
+    "Timestamp": "2025-03-26T07:23:14.953Z"
+  },
+  {
+    "Part#": "Z49734.1",
+    "Serial #": "",
+    "PartName": "BOSSI  S1",
+    "Remark": "3개",
+    "UsageNote": "bg",
+    "Timestamp": "2025-03-26T07:28:17.682Z"
+  },
+  {
+    "Part#": "Z49734.1",
+    "Serial #": "",
+    "PartName": "BOSSI  S1",
+    "Remark": "3개",
+    "UsageNote": "Hs",
+    "Timestamp": "2025-03-26T07:28:19.296Z"
+  },
+  {
+    "Part#": "Z49734.1",
+    "Serial #": "",
+    "PartName": "BOSSI  S1",
+    "Remark": "3개",
+    "UsageNote": "Hs",
+    "Timestamp": "2025-03-26T07:28:21.049Z"
+  },
+  {
+    "Part#": "Z49734.1",
+    "Serial #": "",
+    "PartName": "BOSSI  S1",
+    "Remark": "3개",
+    "UsageNote": "bg",
+    "Timestamp": "2025-03-26T07:28:45.294Z"
+  },
+  {
+    "Part#": "Z49734.1",
+    "Serial #": "",
+    "PartName": "BOSSI  S1",
+    "Remark": "3개",
+    "UsageNote": "bg",
+    "Timestamp": "2025-03-26T07:28:46.919Z"
+  },
+  {
+    "Part#": "Z49734.1",
+    "Serial #": "",
+    "PartName": "BOSSI  S1",
+    "Remark": "3개",
+    "UsageNote": "bgtest",
+    "Timestamp": "2025-03-26T07:29:08.146Z"
+  },
+  {
+    "Part#": "Z49734.1",
+    "Serial #": "",
+    "PartName": "BOSSI  S1",
+    "Remark": "3개",
+    "UsageNote": "bgtest",
+    "Timestamp": "2025-03-26T07:29:09.573Z"
   }
 ]

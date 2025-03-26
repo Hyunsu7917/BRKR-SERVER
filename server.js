@@ -366,6 +366,38 @@ app.post("/api/trigger-local-update", (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 });
+app.get("/excel/he/schedule", async (req, res) => {
+  try {
+    const filePath = path.join(__dirname, "assets", "He.xlsx");
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.readFile(filePath);
+    const sheet = workbook.getWorksheet("일정");
+
+    if (!sheet) {
+      return res.status(404).json({ error: "시트 '일정'을 찾을 수 없습니다." });
+    }
+
+    const rows = [];
+    const headers = sheet.getRow(1).values;
+
+    sheet.eachRow((row, rowNumber) => {
+      if (rowNumber === 1) return;
+
+      const rowData = {};
+      row.eachCell((cell, colNumber) => {
+        const key = headers[colNumber];
+        rowData[key] = cell.value;
+      });
+
+      rows.push(rowData);
+    });
+
+    res.json(rows);
+  } catch (err) {
+    console.error("❌ He 일정 시트 로딩 실패:", err);
+    res.status(500).json({ error: "서버 오류" });
+  }
+});
 // ✅ 서버 시작
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
