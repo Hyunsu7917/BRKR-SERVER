@@ -102,5 +102,13 @@
     "Remark": "HYUNSU USE haha",
     "UsageNote": "FACTORY",
     "Timestamp": "2025-03-26T04:00:56.721Z"
+  },
+  {
+    "Part#": "A123",
+    "Serial #": 4,
+    "PartName": "AA",
+    "Remark": "Bonggun",
+    "UsageNote": "FACTORY",
+    "Timestamp": "2025-03-26T04:34:19.699Z"
   }
 ]
