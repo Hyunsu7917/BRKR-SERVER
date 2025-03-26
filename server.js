@@ -392,6 +392,7 @@ app.get("/excel/he/schedule", async (req, res) => {
       });
 
       rows.push(rowData);
+      console.log("✅ 서버 JSON 예시:", rows[0]);
     });
 
     res.json(rows);
