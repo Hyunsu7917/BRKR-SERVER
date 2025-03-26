@@ -380,20 +380,18 @@ app.get("/excel/he/schedule", async (req, res) => {
     }
 
     const rows = [];
-    const headers = sheet.getRow(1).values.map(h => typeof h === "string" ? h.trim() : h);
+    const headers = sheet.getRow(1).values.slice(1); // ✅ A열부터 정확하게
 
     sheet.eachRow((row, rowNumber) => {
       if (rowNumber === 1) return;
-
       const rowData = {};
       row.eachCell((cell, colNumber) => {
-        const key = headers[colNumber]; // ✅ colNumber는 1부터 시작하므로 -1
+        const key = headers[colNumber - 1]; // ✅ headers와 정렬
         rowData[key] = cell.value !== undefined ? cell.value : "";
       });
-
       rows.push(rowData);
-      console.log("✅ 서버 JSON 예시:", rows[0]);
     });
+
 
     res.json(rows);
   } catch (err) {
