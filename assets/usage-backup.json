@@ -110,5 +110,13 @@
     "Remark": "Bonggun",
     "UsageNote": "FACTORY",
     "Timestamp": "2025-03-26T04:34:19.699Z"
+  },
+  {
+    "Part#": "A123",
+    "Serial #": 1,
+    "PartName": "AA",
+    "Remark": "bye",
+    "UsageNote": "House5634",
+    "Timestamp": "2025-03-26T04:38:07.470Z"
   }
 ]
