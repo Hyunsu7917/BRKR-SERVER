@@ -369,30 +369,38 @@ app.post("/api/trigger-local-update", (req, res) => {
   }
 });
 app.get("/excel/he/schedule", async (req, res) => {
-  const filePath = path.join(__dirname, "assets", "He.xlsx");
-  const workbook = new ExcelJS.Workbook();
-  await workbook.xlsx.readFile(filePath);
-  const sheet = workbook.getWorksheet("일정");
+  try {
+    const filePath = path.join(__dirname, "assets", "He.xlsx");
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.readFile(filePath);
+    const sheet = workbook.getWorksheet("일정");
 
-  if (!sheet) {
-    return res.status(404).json({ error: "시트 '일정'을 찾을 수 없습니다." });
-  }
+    if (!sheet) {
+      return res.status(404).json({ error: "시트 '일정'을 찾을 수 없습니다." });
+    }
 
-  const rows = [];
-  const headers = sheet.getRow(1).values;
+    const rows = [];
+    const headers = sheet.getRow(1).values.slice(1); // ✅ A열 비어있을 경우 대응
 
-  sheet.eachRow((row, rowNumber) => {
-    if (rowNumber === 1) return;
-    const rowData = {};
-    row.eachCell((cell, colNumber) => {
-      const key = headers[colNumber];
-      rowData[key] = cell.value;
+    sheet.eachRow((row, rowNumber) => {
+      if (rowNumber === 1) return;
+
+      const rowData = {};
+      row.eachCell((cell, colNumber) => {
+        const key = headers[colNumber - 1]; // ✅ colNumber는 1부터 시작하므로 -1
+        rowData[key] = cell.value;
+      });
+
+      rows.push(rowData);
     });
-    rows.push(rowData);
-  });
 
-  res.json(rows);
+    res.json(rows);
+  } catch (err) {
+    console.error("엑셀 파싱 에러:", err);
+    res.status(500).json({ error: "서버 에러" });
+  }
 });
+
 
 
 // ✅ 서버 시작
