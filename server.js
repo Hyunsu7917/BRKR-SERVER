@@ -6,6 +6,7 @@ const path = require("path");
 const xlsx = require("xlsx");
 const ExcelJS = require("exceljs");
 
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 // ✅ SSH 키 저장
@@ -367,38 +368,21 @@ app.post("/api/trigger-local-update", (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 });
-app.get("/excel/he/schedule", async (req, res) => {
-  try {
-    const filePath = path.join(__dirname, "assets", "He.xlsx");
-    const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.readFile(filePath);
-    const sheet = workbook.getWorksheet("일정");
+axios.get("https://brkr-server.onrender.com/excel/he/schedule")
+  .then(res => {
+    const data = res.data;
+    setAllRows(data); // 🔥 전체 데이터 저장 (검색 시 사용)
 
-    if (!sheet) {
-      return res.status(404).json({ error: "시트 '일정'을 찾을 수 없습니다." });
-    }
+    // 지역 목록 추출 + '선택 안함' 추가
+    const uniqueRegions = [...new Set(data.map(row => row["지역"]))];
+    setRegionList(["선택 안함", ...uniqueRegions]);
 
-    const rows = [];
-    const headers = sheet.getRow(1).values;
+    // 고객사 자동완성 리스트용
+    const uniqueCustomers = [...new Set(data.map(row => row["고객사"]))];
+    setAllCustomers(uniqueCustomers);
+  })
+  .catch(err => console.error("🔥 초기 로딩 에러:", err));
 
-    sheet.eachRow((row, rowNumber) => {
-      if (rowNumber === 1) return;
-
-      const rowData = {};
-      row.eachCell((cell, colNumber) => {
-        const key = headers[colNumber];
-        rowData[key] = cell.value;
-      });
-
-      rows.push(rowData);
-    });
-
-    res.json(rows);
-  } catch (err) {
-    console.error("❌ He 일정 시트 로딩 실패:", err);
-    res.status(500).json({ error: "서버 오류" });
-  }
-});
 // ✅ 서버 시작
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
