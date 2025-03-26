@@ -345,7 +345,17 @@ try {
 } catch (err) {
   console.error("❌ Git 브랜치 체크아웃 실패:", err.message);
 }
-
+app.get("/excel/part/download", (req, res) => {
+  const filePath = path.join(__dirname, "assets", "Part.xlsx");
+  res.download(filePath, "Part.xlsx", (err) => {
+    if (err) {
+      console.error("❌ Part.xlsx 전송 실패:", err.message);
+      res.status(500).send("Download failed.");
+    } else {
+      console.log("📦 Part.xlsx 파일 전송 완료!");
+    }
+  });
+});
 
 // ✅ 서버 시작
 app.listen(PORT, () => {
