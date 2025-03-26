@@ -380,7 +380,7 @@ app.get("/excel/he/schedule", async (req, res) => {
     }
 
     const rows = [];
-    const headers = sheet.getRow(1).values.slice(1); // ✅ A열 비어있을 경우 대응
+    const headers = sheet.getRow(1).values.map(h => typeof h === "string" ? h.trim() : h);
 
     sheet.eachRow((row, rowNumber) => {
       if (rowNumber === 1) return;
