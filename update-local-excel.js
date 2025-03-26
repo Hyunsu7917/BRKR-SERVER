@@ -19,6 +19,7 @@ https.get(fileUrl, (response) => {
   file.on("finish", () => {
     file.close(() => {
       console.log("✅ 최신 Part.xlsx 파일이 로컬에 저장되었습니다!");
+      console.log("📂 저장 위치:", localPath); // ← 요거 추가!
     });
   });
 }).on("error", (err) => {
