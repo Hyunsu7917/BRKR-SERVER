@@ -356,7 +356,16 @@ app.get("/excel/part/download", (req, res) => {
     }
   });
 });
-
+app.post("/api/trigger-local-update", (req, res) => {
+  try {
+    execSync("node update-local-excel.js");
+    console.log("✅ 로컬 엑셀 자동 업데이트 완료");
+    res.status(200).json({ success: true, message: "Local Excel updated" });
+  } catch (err) {
+    console.error("❌ 로컬 엑셀 업데이트 실패:", err.message);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
 // ✅ 서버 시작
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
