@@ -38,5 +38,13 @@
     "Remark": "testtest",
     "UsageNote": "House",
     "Timestamp": "2025-03-26T01:57:35.854Z"
+  },
+  {
+    "Part#": "A123",
+    "Serial #": 1,
+    "PartName": "AA",
+    "Remark": "testtest123123",
+    "UsageNote": "House",
+    "Timestamp": "2025-03-26T02:27:03.594Z"
   }
 ]
