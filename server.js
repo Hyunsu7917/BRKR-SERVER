@@ -5,7 +5,7 @@ const fs = require("fs");
 const path = require("path");
 const xlsx = require("xlsx");
 const ExcelJS = require("exceljs");
-const axios = require("axios");
+
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -368,20 +368,7 @@ app.post("/api/trigger-local-update", (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 });
-axios.get("https://brkr-server.onrender.com/excel/he/schedule")
-  .then(res => {
-    const data = res.data;
-    setAllRows(data); // 🔥 전체 데이터 저장 (검색 시 사용)
 
-    // 지역 목록 추출 + '선택 안함' 추가
-    const uniqueRegions = [...new Set(data.map(row => row["지역"]))];
-    setRegionList(["선택 안함", ...uniqueRegions]);
-
-    // 고객사 자동완성 리스트용
-    const uniqueCustomers = [...new Set(data.map(row => row["고객사"]))];
-    setAllCustomers(uniqueCustomers);
-  })
-  .catch(err => console.error("🔥 초기 로딩 에러:", err));
 
 // ✅ 서버 시작
 app.listen(PORT, () => {
