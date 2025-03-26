@@ -388,7 +388,7 @@ app.get("/excel/he/schedule", async (req, res) => {
       const rowData = {};
       row.eachCell((cell, colNumber) => {
         const key = headers[colNumber - 1]; // ✅ colNumber는 1부터 시작하므로 -1
-        rowData[key] = cell.value;
+        rowData[key] = cell.value !== undefined ? cell.value : "";
       });
 
       rows.push(rowData);
