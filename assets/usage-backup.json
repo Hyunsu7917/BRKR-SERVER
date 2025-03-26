@@ -94,5 +94,13 @@
     "Remark": "KFC",
     "UsageNote": "Burger",
     "Timestamp": "2025-03-26T03:59:24.421Z"
+  },
+  {
+    "Part#": "A123",
+    "Serial #": 4,
+    "PartName": "AA",
+    "Remark": "HYUNSU USE haha",
+    "UsageNote": "FACTORY",
+    "Timestamp": "2025-03-26T04:00:56.721Z"
   }
 ]
