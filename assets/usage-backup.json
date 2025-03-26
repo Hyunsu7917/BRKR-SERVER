@@ -30,5 +30,13 @@
     "Remark": "HYUNSU USE real??",
     "UsageNote": "FACTORY",
     "Timestamp": "2025-03-26T01:53:49.282Z"
+  },
+  {
+    "Part#": "A123",
+    "Serial #": 1,
+    "PartName": "AA",
+    "Remark": "testtest",
+    "UsageNote": "House",
+    "Timestamp": "2025-03-26T01:57:35.854Z"
   }
 ]
