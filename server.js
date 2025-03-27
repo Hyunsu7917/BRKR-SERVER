@@ -455,7 +455,7 @@ app.post("/api/he/save", async (req, res) => {
     // ✅ 3. 일정 시트 업데이트
     const sheet1 = workbook.getWorksheet("일정");
 
-    for (const newRecord of json) {
+    for (const newRecord of jsonData) {
       const newCustomer = newRecord["고객사"]?.trim();
       const chargeDate = newRecord["충진일"];
       const customerIndex = customerNames.findIndex(cell => {
