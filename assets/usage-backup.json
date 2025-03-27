@@ -262,5 +262,21 @@
     "Remark": "3개",
     "UsageNote": "bgtest",
     "Timestamp": "2025-03-26T07:29:09.573Z"
+  },
+  {
+    "Part#": "Z73436.1",
+    "Serial #": 2541,
+    "PartName": "SHIMCOIL BOSS3 STD S1 PLUG",
+    "Remark": "성균관대 CORE400꺼  수리해 온것",
+    "UsageNote": "",
+    "Timestamp": "2025-03-27T13:52:35.256Z"
+  },
+  {
+    "Part#": "Z49734.1",
+    "Serial #": "",
+    "PartName": "BOSSI  S1",
+    "Remark": "",
+    "UsageNote": "",
+    "Timestamp": "2025-03-27T13:52:48.959Z"
   }
 ]

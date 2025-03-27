@@ -10,6 +10,7 @@ if exist manual-mode.txt (
   echo ⚠️ 수동 모드: 동기화 중단됨.
 ) else (
   node update-local-excel.js
+  node update-he-excel.js
 )
 
 timeout /t 180 >nul

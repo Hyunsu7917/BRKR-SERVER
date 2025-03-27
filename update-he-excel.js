@@ -4,7 +4,7 @@ const ExcelJS = require("exceljs");
 
 async function updateHeExcel() {
   const jsonPath = path.join(__dirname, "he-usage-backup.json");
-  const excelPath = path.join(__dirname, "He.xlsx");
+  const excelPath = path.join(__dirname, "assets", "He.xlsx");
 
   if (!fs.existsSync(jsonPath)) {
     console.error("❌ he-usage-backup.json 파일이 없습니다.");

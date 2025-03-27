@@ -146,7 +146,7 @@ app.get("/excel/:sheet/value/:value", basicAuthMiddleware, (req, res) => {
   }
 });
 // ✅ 국내 재고 엑셀에 사용 기록 반영하기
-app.post("/api/update-part-excel", basicAuthMiddleware, (req, res) => {
+app.post("/api/update-part-excel", basicAuthMiddleware, (req, res) => {  
   console.log("📩 Received update request", req.body);
   const filePath = path.join(__dirname, "assets", "Part.xlsx");
   if (!fs.existsSync(filePath)) return res.status(404).json({ error: "파일 없음" });
@@ -154,7 +154,7 @@ app.post("/api/update-part-excel", basicAuthMiddleware, (req, res) => {
   const { ["Part#"]: Part, ["Serial #"]: Serial, PartName, Remark, UsageNote } = req.body;
 
   try {
-    // ✅ 엑셀 업데이트
+        // ✅ 엑셀 업데이트
     const workbook = xlsx.readFile(filePath);
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     const jsonData = xlsx.utils.sheet_to_json(sheet, { defval: "" });
@@ -175,7 +175,7 @@ app.post("/api/update-part-excel", basicAuthMiddleware, (req, res) => {
     console.log("📁 로컬 Part.xlsx 저장 완료:", filePath);
 
     // ✅ 백업 파일 저장 + 500개 초과 시 정리
-    const backupPath = path.join(__dirname, "assets", "usage-backup.json");
+    const backupPath = path.join(__dirname, "assets", "usage-backup.json");    
     const currentBackup = fs.existsSync(backupPath)
       ? JSON.parse(fs.readFileSync(backupPath, "utf-8"))
       : [];
@@ -197,6 +197,44 @@ app.post("/api/update-part-excel", basicAuthMiddleware, (req, res) => {
 
     fs.writeFileSync(backupPath, JSON.stringify(currentBackup, null, 2), "utf-8");
 
+    // ✅ He.xlsx도 함께 업데이트
+    try {
+      const heFilePath = path.join(__dirname, "assets", "He.xlsx");
+      const heWorkbook = xlsx.readFile(heFilePath);
+      const heSheet = heWorkbook.Sheets[heWorkbook.SheetNames[0]];
+      const heJsonData = xlsx.utils.sheet_to_json(heSheet, { defval: "" });
+
+      const heBackupPath = path.join(__dirname, "he-usage-backup.json");
+      const heBackup = fs.existsSync(heBackupPath)
+        ? JSON.parse(fs.readFileSync(heBackupPath, "utf-8"))
+        : [];
+
+      // 일정 시트 업데이트
+      heJsonData.forEach(record => {
+        const { 고객사, 지역, Magnet, 충진일, 다음충진일, "충진주기(개월)": 주기 } = record;
+        const rowIndex = heJsonData.findIndex(row =>
+          row["고객사"] === 고객사 && row["지역"] === 지역 && row["Magnet"] === Magnet
+        );
+        if (rowIndex !== -1) {
+          heJsonData[rowIndex]["충진일"] = 충진일;
+          heJsonData[rowIndex]["다음충진일"] = 다음충진일;
+          heJsonData[rowIndex]["충진주기(개월)"] = 주기;
+        }
+      });
+
+      const newHeSheet = xlsx.utils.json_to_sheet(heJsonData);
+      heWorkbook.Sheets[heWorkbook.SheetNames[0]] = newHeSheet;
+      xlsx.writeFile(heWorkbook, heFilePath);
+      console.log("📁 로컬 He.xlsx 일정 시트 저장 완료:", heFilePath);
+
+      // 🔄 he-usage-backup.json 기록
+      heBackup.push(...heJsonData);
+      fs.writeFileSync(heBackupPath, JSON.stringify(heBackup, null, 2), "utf-8");
+      console.log("📄 he-usage-backup.json 기록 완료");
+
+    } catch (err) {
+      console.error("⚠️ He.xlsx 업데이트 실패:", err.message);
+    }
     const { execSync } = require("child_process");
 
     try {
@@ -269,42 +307,104 @@ app.post("/api/update-part-excel", basicAuthMiddleware, (req, res) => {
 
 app.get("/api/sync-usage-to-excel", async (req, res) => {
   try {
+    // === 1. Part.xlsx 업데이트 ===
     const backupPath = path.join(__dirname, "assets", "usage-backup.json");
     const filePath = path.join(__dirname, "assets", "Part.xlsx");
 
-    // 백업 파일 존재 확인
-    if (!fs.existsSync(backupPath)) {
-      return res.status(404).json({ error: "백업 파일이 존재하지 않습니다." });
+    if (fs.existsSync(backupPath)) {
+      const backupRaw = fs.readFileSync(backupPath, "utf-8").trim();
+      const backupData = backupRaw ? JSON.parse(backupRaw) : [];
+      const workbook = xlsx.readFile(filePath);
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const jsonData = xlsx.utils.sheet_to_json(sheet, { defval: "" });
+
+      backupData.forEach(backup => {
+        const rowIndex = jsonData.findIndex(row =>
+          String(row["Part#"]).toLowerCase() === String(backup["Part#"]).toLowerCase() &&
+          String(row["Serial #"]) === String(backup["Serial #"])
+        );
+
+        if (rowIndex !== -1) {
+          jsonData[rowIndex]["Remark"] = backup.Remark || "";
+          jsonData[rowIndex]["사용처"] = backup.UsageNote || "";
+        }
+      });
+
+      const newSheet = xlsx.utils.json_to_sheet(jsonData);
+      workbook.Sheets[workbook.SheetNames[0]] = newSheet;
+      fs.writeFileSync(filePath, xlsx.write(workbook, { type: "buffer", bookType: "xlsx" }));
+      console.log("✅ 로컬 Part.xlsx 덮어쓰기 완료!");
+    } else {
+      console.warn("⚠️ usage-backup.json 파일 없음. Part 업데이트 생략");
     }
 
-    // 파일 불러오기
-    const backupRaw = fs.readFileSync(backupPath, "utf-8").trim();
-    const backupData = backupRaw ? JSON.parse(backupRaw) : [];
-    const workbook = xlsx.readFile(filePath);
-    const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    const jsonData = xlsx.utils.sheet_to_json(sheet, { defval: "" });
+    // === 2. He.xlsx 업데이트 ===
+    const heBackupPath = path.join(__dirname, "he-usage-backup.json");
+    const heFilePath = path.join(__dirname, "assets", "He.xlsx");
 
-    // 백업 내용을 엑셀 데이터에 반영
-    backupData.forEach(backup => {
-      const rowIndex = jsonData.findIndex(row =>
-        String(row["Part#"]).toLowerCase() === String(backup["Part#"]).toLowerCase() &&
-        String(row["Serial #"]) === String(backup["Serial #"])
-      );
+    if (fs.existsSync(heBackupPath)) {
+      const heRaw = fs.readFileSync(heBackupPath, "utf-8").trim();
+      const heData = heRaw ? JSON.parse(heRaw) : [];
+      const heWorkbook = xlsx.readFile(heFilePath);
 
-      if (rowIndex !== -1) {
-        jsonData[rowIndex]["Remark"] = backup.Remark || "";
-        jsonData[rowIndex]["사용처"] = backup.UsageNote || "";
-      }
-    });
+      // "일정" 시트 업데이트
+      const scheduleSheet = heWorkbook.Sheets["일정"];
+      const scheduleJson = xlsx.utils.sheet_to_json(scheduleSheet, { defval: "" });
 
-    // 다시 저장
-    const newSheet = xlsx.utils.json_to_sheet(jsonData);
-    workbook.Sheets[workbook.SheetNames[0]] = newSheet;
+      heData.forEach(record => {
+        const idx = scheduleJson.findIndex(row =>
+          row["고객사"] === record["고객사"] &&
+          row["지역"] === record["지역"] &&
+          String(row["Magnet"]) === String(record["Magnet"])
+        );
+        if (idx !== -1) {
+          scheduleJson[idx]["충진일"] = record["충진일"];
+          scheduleJson[idx]["다음충진일"] = record["다음충진일"];
+          scheduleJson[idx]["충진주기(개월)"] = record["충진주기(개월)"];
+        }
+      });
 
-    console.log("🟡 Buffer 생성 완료");
-    fs.writeFileSync(filePath, xlsx.write(workbook, { type: "buffer", bookType: "xlsx" }));
+      const newScheduleSheet = xlsx.utils.json_to_sheet(scheduleJson);
+      heWorkbook.Sheets["일정"] = newScheduleSheet;
 
-    console.log("✅ 로컬 Part.xlsx 덮어쓰기 완료!");
+      // "기록" 시트 업데이트 (고객사별 열 구조)
+      const recordSheet = heWorkbook.Sheets["기록"];
+      const customerRow = recordSheet["1"];
+      const regionRow = recordSheet["2"];
+      const magnetRow = recordSheet["3"];
+
+      heData.forEach(record => {
+        const { 고객사, 지역, Magnet, 충진일 } = record;
+        const refSheet = heWorkbook.getWorksheet("기록");
+        const customerNames = refSheet.getRow(1).values;
+        let colIndex = -1;
+
+        for (let i = 2; i < customerNames.length; i++) {
+          const name = customerNames[i];
+          const region = refSheet.getRow(2).getCell(i).value;
+          const magnet = refSheet.getRow(3).getCell(i).value;
+
+          if (name === 고객사 && region === 지역 && magnet == Magnet) {
+            colIndex = i;
+            break;
+          }
+        }
+
+        if (colIndex !== -1) {
+          let row = 4;
+          while (refSheet.getRow(row).getCell(colIndex).value) {
+            row++;
+          }
+          refSheet.getRow(row).getCell(colIndex).value = 충진일;
+        }
+      });
+
+      // 저장
+      fs.writeFileSync(heFilePath, xlsx.write(heWorkbook, { type: "buffer", bookType: "xlsx" }));
+      console.log("✅ 로컬 He.xlsx 덮어쓰기 완료!");
+    } else {
+      console.warn("⚠️ he-usage-backup.json 파일 없음. He 업데이트 생략");
+    }
 
     return res.json({ success: true, message: "사용기록이 엑셀에 반영되었습니다." });
   } catch (err) {
@@ -313,43 +413,119 @@ app.get("/api/sync-usage-to-excel", async (req, res) => {
   }
 });
 
+
 // 🔁 서버 부팅 시 백업 데이터를 엑셀에 자동 반영
 const restoreExcelFromBackup = () => {
   try {
     console.log("🟠 restoreExcelFromBackup 시작");
-    const filePath = path.join(__dirname, "assets", "Part.xlsx");
-    const backupPath = path.join(__dirname, "assets", "usage-backup.json");
-    if (!fs.existsSync(backupPath)) return;
 
-    const backupData = JSON.parse(fs.readFileSync(backupPath, "utf-8"));
-    const workbook = xlsx.readFile(filePath);
-    const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    const jsonData = xlsx.utils.sheet_to_json(sheet, { defval: "" });
+    // ✅ Part.xlsx 복구
+    const partFilePath = path.join(__dirname, "assets", "Part.xlsx");
+    const partBackupPath = path.join(__dirname, "assets", "usage-backup.json");
+    if (fs.existsSync(partBackupPath)) {
+      const backupData = JSON.parse(fs.readFileSync(partBackupPath, "utf-8"));
+      const workbook = xlsx.readFile(partFilePath);
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const jsonData = xlsx.utils.sheet_to_json(sheet, { defval: "" });
 
-    console.log("🟡 백업 데이터 개수:", backupData.length);
-    console.log("🟡 백업 내용 미리보기:", JSON.stringify(backupData[0], null, 2));
-    console.log("🟡 엑셀 행 수:", jsonData.length);
+      console.log("🟡 Part 백업 개수:", backupData.length);
+      console.log("🟡 Part 백업 미리보기:", JSON.stringify(backupData[0], null, 2));
 
-    for (const backup of backupData) {
-      const rowIndex = jsonData.findIndex(
-        row =>
-          String(row["Part#"]).toLowerCase() === String(backup.Part).toLowerCase() &&
-          String(row["Serial #"]) === String(backup.Serial)
-      );
-      if (rowIndex !== -1) {
-        jsonData[rowIndex]["Remark"] = backup.Remark || "";
-        jsonData[rowIndex]["사용처"] = backup.UsageNote || "";
+      for (const backup of backupData) {
+        const rowIndex = jsonData.findIndex(
+          row =>
+            String(row["Part#"]).toLowerCase() === String(backup.Part).toLowerCase() &&
+            String(row["Serial #"]) === String(backup.Serial)
+        );
+        if (rowIndex !== -1) {
+          jsonData[rowIndex]["Remark"] = backup.Remark || "";
+          jsonData[rowIndex]["사용처"] = backup.UsageNote || "";
+        }
       }
+
+      const newSheet = xlsx.utils.json_to_sheet(jsonData);
+      workbook.Sheets[workbook.SheetNames[0]] = newSheet;
+      fs.writeFileSync(partFilePath, xlsx.write(workbook, { type: "buffer", bookType: "xlsx" }));
+      console.log("📁 Part.xlsx 복구 완료!");
+    } else {
+      console.log("⚠️ Part 백업 파일 없음");
     }
 
-    const newSheet = xlsx.utils.json_to_sheet(jsonData);
-    workbook.Sheets[workbook.SheetNames[0]] = newSheet;
-    fs.writeFileSync(filePath, xlsx.write(workbook, { type: "buffer", bookType: "xlsx" }));
-    console.log("🛠 서버 부팅 시 백업 데이터로 Part.xlsx 복구 완료!");
+    // ✅ He.xlsx 복구
+    const heFilePath = path.join(__dirname, "assets", "He.xlsx");
+    const heBackupPath = path.join(__dirname, "he-usage-backup.json");
+    if (fs.existsSync(heBackupPath)) {
+      const heBackup = JSON.parse(fs.readFileSync(heBackupPath, "utf-8"));
+      const heWorkbook = xlsx.readFile(heFilePath);
+
+      // === 일정 시트 복구 ===
+      const scheduleSheet = heWorkbook.Sheets["일정"];
+      const scheduleJson = xlsx.utils.sheet_to_json(scheduleSheet, { defval: "" });
+
+      for (const item of heBackup) {
+        const idx = scheduleJson.findIndex(row =>
+          row["고객사"] === item["고객사"] &&
+          row["지역"] === item["지역"] &&
+          String(row["Magnet"]) === String(item["Magnet"])
+        );
+        if (idx !== -1) {
+          scheduleJson[idx]["충진일"] = item["충진일"];
+          scheduleJson[idx]["다음충진일"] = item["다음충진일"];
+          scheduleJson[idx]["충진주기(개월)"] = item["충진주기(개월)"];
+        }
+      }
+
+      const newSchedule = xlsx.utils.json_to_sheet(scheduleJson);
+      heWorkbook.Sheets["일정"] = newSchedule;
+
+      // === 기록 시트 복구 ===
+      const recordSheet = heWorkbook.Sheets["기록"];
+      const range = xlsx.utils.decode_range(recordSheet["!ref"]);
+      const customerNames = [];
+      for (let col = 1; col <= range.e.c; col++) {
+        const cell = recordSheet[xlsx.utils.encode_cell({ r: 0, c: col })];
+        customerNames.push(cell ? cell.v : "");
+      }
+
+      heBackup.forEach(item => {
+        const { 고객사, 지역, Magnet, 충진일 } = item;
+        let colIndex = -1;
+
+        for (let col = 1; col < customerNames.length; col++) {
+          const name = customerNames[col];
+          const region = recordSheet[xlsx.utils.encode_cell({ r: 1, c: col })]?.v;
+          const magnet = recordSheet[xlsx.utils.encode_cell({ r: 2, c: col })]?.v;
+          if (name === 고객사 && region === 지역 && String(magnet) === String(Magnet)) {
+            colIndex = col;
+            break;
+          }
+        }
+
+        if (colIndex !== -1) {
+          let row = 3;
+          while (true) {
+            const cellRef = xlsx.utils.encode_cell({ r: row, c: colIndex });
+            if (!recordSheet[cellRef] || !recordSheet[cellRef].v) {
+              recordSheet[cellRef] = { t: "s", v: 충진일 };
+              break;
+            }
+            row++;
+          }
+        }
+      });
+
+      fs.writeFileSync(heFilePath, xlsx.write(heWorkbook, { type: "buffer", bookType: "xlsx" }));
+      console.log("📁 He.xlsx 복구 완료!");
+    } else {
+      console.log("⚠️ He 백업 파일 없음");
+    }
+
+    console.log("✅ restoreExcelFromBackup 완료");
   } catch (err) {
     console.error("❌ 복구 실패:", err);
   }
 };
+
 app.get("/api/show-backup", (req, res) => {
   try {
     const backupPath = path.join(__dirname, "assets", "usage-backup.json");
@@ -392,16 +568,94 @@ app.get("/excel/part/download", (req, res) => {
     }
   });
 });
-app.post("/api/trigger-local-update", (req, res) => {
+// ✅ He 백업 JSON 조회
+app.get("/api/show-he-backup", (req, res) => {
   try {
-    execSync("node update-local-excel.js");
-    console.log("✅ 로컬 엑셀 자동 업데이트 완료");
-    res.status(200).json({ success: true, message: "Local Excel updated" });
+    const heBackupPath = path.join(__dirname, "he-usage-backup.json");
+
+    if (!fs.existsSync(heBackupPath)) {
+      return res.status(404).json({ error: "He 백업 파일이 존재하지 않습니다." });
+    }
+
+    const backupData = JSON.parse(fs.readFileSync(heBackupPath, "utf-8"));
+    return res.json({ success: true, data: backupData });
   } catch (err) {
-    console.error("❌ 로컬 엑셀 업데이트 실패:", err.message);
-    res.status(500).json({ success: false, error: err.message });
+    console.error("❌ He 백업 조회 오류:", err);
+    return res.status(500).json({ error: "He 백업 파일 조회 중 오류 발생" });
   }
 });
+
+// ✅ 서버 실행 시 Excel 자동 복원
+restoreExcelFromBackup(); // He & Part 자동 복원 수행
+
+// ✅ Render 서버가 detached 상태일 경우 main 브랜치로 강제 이동
+try {
+  execSync("git checkout main", {
+    cwd: process.cwd(),
+    env: {
+      ...process.env,
+      GIT_SSH_COMMAND: 'ssh -i ~/.ssh/render_deploy_key -o StrictHostKeyChecking=no',
+    },
+  });
+  console.log("🔁 Git 브랜치 → main 체크아웃 완료");
+} catch (err) {
+  console.error("❌ Git 브랜치 체크아웃 실패:", err.message);
+}
+
+// ✅ Part 엑셀 다운로드 API
+app.get("/excel/part/download", (req, res) => {
+  const filePath = path.join(__dirname, "assets", "Part.xlsx");
+  res.download(filePath, "Part.xlsx", (err) => {
+    if (err) {
+      console.error("❌ Part.xlsx 전송 실패:", err.message);
+      res.status(500).send("Download failed.");
+    } else {
+      console.log("📦 Part.xlsx 파일 전송 완료!");
+    }
+  });
+});
+
+// ✅ He 엑셀 다운로드 API
+app.get("/excel/he/download", (req, res) => {
+  const filePath = path.join(__dirname, "assets", "He.xlsx");
+  res.download(filePath, "He.xlsx", (err) => {
+    if (err) {
+      console.error("❌ He.xlsx 전송 실패:", err.message);
+      res.status(500).send("Download failed.");
+    } else {
+      console.log("📦 He.xlsx 파일 전송 완료!");
+    }
+  });
+});
+
+app.post("/api/trigger-local-update", (req, res) => {
+  let localResult = "❌ 실패";
+  let heResult = "❌ 실패";
+
+  try {
+    execSync("node update-local-excel.js");
+    localResult = "✅ 성공";
+  } catch (err) {
+    console.error("❌ update-local-excel.js 실패:", err.message);
+  }
+
+  try {
+    execSync("node update-he-excel.js");
+    heResult = "✅ 성공";
+  } catch (err) {
+    console.error("❌ update-he-excel.js 실패:", err.message);
+  }
+
+  const success = localResult === "✅ 성공" && heResult === "✅ 성공";
+
+  console.log(`📦 결과 요약 → Part: ${localResult} / He: ${heResult}`);
+
+  res.status(success ? 200 : 207).json({
+    success,
+    message: `Part: ${localResult}, He: ${heResult}`,
+  });
+});
+
 app.get("/excel/he/schedule", async (req, res) => {
   try {
     const filePath = path.join(__dirname, "assets", "He.xlsx");
