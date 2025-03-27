@@ -407,8 +407,10 @@ app.post("/api/he/save", async (req, res) => {
     // ✅ 1. JSON 백업 저장
     let backup = [];
     if (fs.existsSync(filePath)) {
-      backup = JSON.parse(fs.readFileSync(filePath));
+      const json = JSON.parse(fs.readFileSync(filePath));
+      backup = Array.isArray(json) ? json : []; // <-- 안전하게 배열로 보장
     }
+
     backup.push(newRecord);
     fs.writeFileSync(filePath, JSON.stringify(backup, null, 2));
 
