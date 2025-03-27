@@ -455,33 +455,27 @@ app.post("/api/he/save", async (req, res) => {
     // ✅ 3. 일정 시트 업데이트
     const sheet1 = workbook.getWorksheet("일정");
 
-    json.forEach((newRecord) => {
-      const { 고객사, 지역, Magnet, 충진일, 다음충진일, "충진주기(개월)": 주기 } = newRecord;
-
-      // 1행: 헤더, 2행부터 데이터 시작
-      const row = sheet1.findRow((row, idx) => {
-        if (idx < 3) return false; // 헤더 제외
-
-        const rowCustomer = String(row.getCell("A").value || "").trim();
-        const rowRegion = String(row.getCell("B").value || "").trim();
-        const rowMagnet = String(row.getCell("C").value || "").trim();
-
-        return (
-          rowCustomer === 고객사 &&
-          rowRegion === 지역 &&
-          rowMagnet === Magnet
-        );
+    for (const newRecord of json) {
+      const newCustomer = newRecord["고객사"]?.trim();
+      const chargeDate = newRecord["충진일"];
+      const customerIndex = customerNames.findIndex(cell => {
+        const name = typeof cell?.text === "string" ? cell.text.trim() : String(cell || "").trim();
+        return name === newCustomer;
       });
-
-      if (row) {
-        row.getCell("D").value = 충진일;
-        row.getCell("E").value = 다음충진일;
-        row.getCell("F").value = 주기;
-        console.log(`✅ 일정 업데이트: ${고객사}, ${Magnet}`);
+    
+      if (customerIndex !== -1) {
+        const targetCol = customerIndex + 2;
+        let rowIndex = 3;
+        while (sheet2.getCell(rowIndex, targetCol).value) {
+          rowIndex++;
+        }
+        sheet2.getCell(rowIndex, targetCol).value = chargeDate;
+        console.log(`✅ ${newCustomer} → ${rowIndex}행 기록 완료`);
       } else {
-        console.warn(`⚠️ 일정 시트에서 '${고객사}, ${Magnet}'을 찾지 못했습니다.`);
+        console.warn(`❗ 고객사 '${newCustomer}' 찾을 수 없음`);
       }
-    });
+    }
+    
 
     
     // ✅ 4. "기록" 시트에 로그 추가 (고객사별 열)
