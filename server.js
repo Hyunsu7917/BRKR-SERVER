@@ -50,7 +50,28 @@ try {
 } catch (err) {
   console.error("⚠️ Git init/pull 오류:", err.message);
 }
-
+function pushToGit() {
+  return new Promise((resolve, reject) => {
+    exec(
+      `git add . && git commit -m "auto: helium update" && git push`,
+      {
+        cwd: __dirname,
+        env: {
+          ...process.env,
+          GIT_SSH_COMMAND: `ssh -i ${process.env.PRIVATE_KEY_PATH}`,
+        },
+      },
+      (err, stdout, stderr) => {
+        if (err) {
+          console.error("Git push 실패:", stderr);
+          return reject(stderr);
+        }
+        console.log("✅ Git push 성공:", stdout);
+        resolve(stdout);
+      }
+    );
+  });
+}
 
 app.use(cors());
 app.use(express.json());
