@@ -481,20 +481,10 @@ app.post("/api/he/save", async (req, res) => {
     if (customerIndex !== -1) {
       const col = customerIndex + 2; // +1 for 0-index, +1 for A열 제외
       let lastRow = sheet2.lastRow.number;
-
-      // 현재 열 기준으로 마지막 데이터 아래 찾기
-      while (
-        sheet2.getCell(lastRow, col).value === null &&
-        lastRow > 1
-      ) {
-        lastRow--;
-      }
-
-      sheet2.getCell(lastRow + 1, col).value = newRecord["충진일"];
+      sheet2.getCell(lastRow + 1, targetCol).value = newRecord["충진일"];
     } else {
       console.warn("⚠️ 기록 시트에 해당 고객사 열이 없습니다.");
     }
-
 
     // ✅ 5. 저장
     await workbook.xlsx.writeFile("assets/He.xlsx");
