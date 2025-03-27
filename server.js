@@ -477,12 +477,13 @@ app.post("/api/he/save", async (req, res) => {
     const headerRow = sheet2.getRow(1);
     const customerHeaders = headerRow.values.slice(1); // A열 제외
 
-    const customerColIndex = headerRow.values
-      .slice(1)
-      .findIndex(v => typeof v === "string" && v.trim() === newRecord["고객사"]);
+    const customerNames = headerRow.values.slice(1); // A열 제외한 고객사들
+    const customerIndex = customerNames.findIndex(
+      name => typeof name === "string" && name.trim() === newRecord["고객사"]
+    );
 
-    if (customerColIndex !== -1) {
-      const targetCol = customerColIndex + 2; // +1 for slice offset, +1 for A열
+    if (customerIndex !== -1) {
+      const targetCol = customerIndex + 2; // B열이 2이므로 +2
       const lastRow = sheet2.lastRow.number;
       sheet2.getCell(lastRow + 1, targetCol).value = newRecord["충진일"];
     } else {
