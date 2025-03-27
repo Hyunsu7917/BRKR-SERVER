@@ -451,31 +451,48 @@ app.post("/api/he/save", async (req, res) => {
     // ✅ 2. He.xlsx 열기
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.readFile("assets/He.xlsx");
-
+    
     // ✅ 3. 일정 시트 업데이트
     const sheet1 = workbook.getWorksheet("일정");
 
-    const jsonData = req.body; // 또는 올바른 이름
+    const jsonData = req.body;
+
+    // 배열 여부 확인
+    if (!Array.isArray(jsonData)) {
+      console.error("❌ 배열이 아님:", jsonData);
+      return res.status(400).send("데이터 형식이 배열이 아닙니다.");
+    }
+
+    // 반복
     for (const newRecord of jsonData) {
       const newCustomer = newRecord["고객사"]?.trim();
+      const region = newRecord["지역"]?.trim();
+      const magnet = newRecord["Magnet"]?.trim();
       const chargeDate = newRecord["충진일"];
-      const customerIndex = customerNames.findIndex(cell => {
-        const name = typeof cell?.text === "string" ? cell.text.trim() : String(cell || "").trim();
-        return name === newCustomer;
-      });
-    
-      if (customerIndex !== -1) {
-        const targetCol = customerIndex + 2;
-        let rowIndex = 3;
-        while (sheet2.getCell(rowIndex, targetCol).value) {
-          rowIndex++;
-        }
-        sheet2.getCell(rowIndex, targetCol).value = chargeDate;
-        console.log(`✅ ${newCustomer} → ${rowIndex}행 기록 완료`);
+      const nextChargeDate = newRecord["다음충진일"];
+      const 주기 = newRecord["충진주기(개월)"];
+
+      const customerNames = sheet1.getRow(1).values;
+      const regionRow = sheet1.getRow(2).values;
+      const magnetRow = sheet1.getRow(3).values;
+
+      const colIndex = customerNames.findIndex((cell, idx) =>
+        typeof cell === "string" &&
+        cell.trim() === newCustomer &&
+        regionRow[idx]?.trim?.() === region &&
+        magnetRow[idx]?.trim?.() === magnet
+      );
+
+      if (colIndex !== -1) {
+        sheet1.getCell(4, colIndex).value = chargeDate;
+        sheet1.getCell(5, colIndex).value = nextChargeDate;
+        sheet1.getCell(6, colIndex).value = 주기;
+        console.log(`✅ 일정 업데이트됨: ${newCustomer} ${magnet}`);
       } else {
-        console.warn(`❗ 고객사 '${newCustomer}' 찾을 수 없음`);
+        console.warn(`❌ 일치하는 고객사+지역+Magnet을 일정 시트에서 찾지 못함: ${newCustomer}, ${region}, ${magnet}`);
       }
     }
+
     
 
     
