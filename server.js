@@ -484,7 +484,7 @@ app.post("/api/he/save", async (req, res) => {
     const headerRow2 = sheet2.getRow(2); // 지역
     const headerRow3 = sheet2.getRow(3); // Magnet
 
-    json.forEach((newRecord) => {
+    jsonData.forEach((newRecord) => {
       const newCustomer = newRecord["고객사"]?.trim();
       const newRegion = newRecord["지역"]?.trim();
       const newMagnet = newRecord["Magnet"]?.trim();
