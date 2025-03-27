@@ -456,42 +456,37 @@ app.post("/api/he/save", async (req, res) => {
     const sheet1 = workbook.getWorksheet("일정");
 
     const jsonData = req.body;
-
-    // 배열 여부 확인
     if (!Array.isArray(jsonData)) {
-      console.error("❌ 배열이 아님:", jsonData);
       return res.status(400).send("데이터 형식이 배열이 아닙니다.");
     }
 
-    // 반복
-    for (const newRecord of jsonData) {
-      const newCustomer = newRecord["고객사"]?.trim();
-      const region = newRecord["지역"]?.trim();
-      const magnet = newRecord["Magnet"]?.trim();
-      const chargeDate = newRecord["충진일"];
-      const nextChargeDate = newRecord["다음충진일"];
-      const 주기 = newRecord["충진주기(개월)"];
+    const rows = sheet1.getRows(2, sheet1.rowCount - 1); // 2행부터 데이터 시작
 
-      const customerNames = sheet1.getRow(1).values;
-      const regionRow = sheet1.getRow(2).values;
-      const magnetRow = sheet1.getRow(3).values;
+    jsonData.forEach((record) => {
+      const customer = record["고객사"]?.toString().trim();
+      const region = record["지역"]?.toString().trim();
+      const magnet = record["Magnet"]?.toString().trim();
+      const chargeDate = record["충진일"];
+      const nextChargeDate = record["다음충진일"];
+      const cycle = record["충진주기(개월)"];
 
-      const colIndex = customerNames.findIndex((cell, idx) =>
-        typeof cell === "string" &&
-        cell.trim() === newCustomer &&
-        regionRow[idx]?.trim?.() === region &&
-        magnetRow[idx]?.trim?.() === magnet
-      );
+      const matchedRow = rows.find((row) => {
+        const rowCustomer = row.getCell(1).value?.toString().trim();
+        const rowRegion = row.getCell(2).value?.toString().trim();
+        const rowMagnet = row.getCell(3).value?.toString().trim();
+        return rowCustomer === customer && rowRegion === region && rowMagnet === magnet;
+      });
 
-      if (colIndex !== -1) {
-        sheet1.getCell(4, colIndex).value = chargeDate;
-        sheet1.getCell(5, colIndex).value = nextChargeDate;
-        sheet1.getCell(6, colIndex).value = 주기;
-        console.log(`✅ 일정 업데이트됨: ${newCustomer} ${magnet}`);
+      if (matchedRow) {
+        matchedRow.getCell(4).value = chargeDate;
+        matchedRow.getCell(5).value = nextChargeDate;
+        matchedRow.getCell(6).value = cycle;
+        console.log(`✅ 일정 업데이트: ${customer} / ${region} / ${magnet}`);
       } else {
-        console.warn(`❌ 일치하는 고객사+지역+Magnet을 일정 시트에서 찾지 못함: ${newCustomer}, ${region}, ${magnet}`);
+        console.warn(`❌ 일정에서 ${customer} / ${region} / ${magnet} 찾지 못함`);
       }
-    }
+    });
+
 
     
 
