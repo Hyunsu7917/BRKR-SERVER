@@ -477,14 +477,18 @@ app.post("/api/he/save", async (req, res) => {
     const headerRow = sheet2.getRow(1);
     const customerHeaders = headerRow.values.slice(1); // A열 제외
 
-    const customerIndex = customerHeaders.indexOf(newRecord["고객사"]);
-    if (customerIndex !== -1) {
-      const col = customerIndex + 2; // +1 for 0-index, +1 for A열 제외
-      let lastRow = sheet2.lastRow.number;
+    const customerColIndex = headerRow.values
+      .slice(1)
+      .findIndex(v => typeof v === "string" && v.trim() === newRecord["고객사"]);
+
+    if (customerColIndex !== -1) {
+      const targetCol = customerColIndex + 2; // +1 for slice offset, +1 for A열
+      const lastRow = sheet2.lastRow.number;
       sheet2.getCell(lastRow + 1, targetCol).value = newRecord["충진일"];
     } else {
       console.warn("⚠️ 기록 시트에 해당 고객사 열이 없습니다.");
     }
+
 
     // ✅ 5. 저장
     await workbook.xlsx.writeFile("assets/He.xlsx");
