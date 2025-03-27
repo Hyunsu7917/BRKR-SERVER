@@ -61,7 +61,7 @@ try {
 function pushToGit() {
   return new Promise((resolve, reject) => {
     exec(
-      `git add . && git commit -m "auto: helium update" && git push`,
+      `git add . && git commit -m "auto: helium update" && git push --set-upstream origin main`,    
       {
         cwd: __dirname,
         env: {
