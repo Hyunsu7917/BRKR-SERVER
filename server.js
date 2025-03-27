@@ -399,6 +399,69 @@ app.get("/excel/he/schedule", async (req, res) => {
     res.status(500).json({ error: "서버 에러" });
   }
 });
+app.post("/api/he/save", async (req, res) => {
+  const newRecord = req.body; // row, 충진일, 다음충진일 포함
+  const filePath = path.join(__dirname, "he-usage-backup.json");
+
+  try {
+    // ✅ 1. JSON 백업 저장
+    let backup = [];
+    if (fs.existsSync(filePath)) {
+      backup = JSON.parse(fs.readFileSync(filePath));
+    }
+    backup.push(newRecord);
+    fs.writeFileSync(filePath, JSON.stringify(backup, null, 2));
+
+    // ✅ 2. He.xlsx 열기
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.readFile("assets/He.xlsx");
+
+    // ✅ 3. "일정" 시트 업데이트
+    const sheet1 = workbook.getWorksheet("일정");
+    const headers1 = sheet1.getRow(1).values.slice(1); // A열부터
+    let updated = false;
+
+    sheet1.eachRow((row, rowNumber) => {
+      if (rowNumber === 1) return;
+      const customer = row.getCell(headers1.indexOf("고객사") + 1).value;
+      if (customer === newRecord["고객사"]) {
+        row.getCell(headers1.indexOf("충진일") + 1).value = newRecord["충진일"];
+        row.getCell(headers1.indexOf("다음충진일") + 1).value = newRecord["다음충진일"];
+        updated = true;
+      }
+    });
+
+    if (!updated) {
+      console.warn("⚠️ 해당 고객사를 일정 시트에서 찾지 못했습니다.");
+    }
+
+    // ✅ 4. "기록" 시트 로그 추가 (행 단위)
+    const sheet2 = workbook.getWorksheet("기록");
+    const headerRow = sheet2.getRow(1);
+    const customerNames = headerRow.values.slice(1); // A열 제외
+    const colIndex = customerNames.indexOf(newRecord["고객사"]);
+
+    if (colIndex !== -1) {
+      const targetCol = colIndex + 2; // +1 for 0-index, +1 for slice(1)
+      const lastRow = sheet2.lastRow.number;
+      sheet2.getCell(lastRow + 1, targetCol).value = newRecord["충진일"];
+    } else {
+      console.warn("⚠️ 기록 시트에 해당 고객사 열이 없습니다.");
+    }
+
+    // ✅ 5. 저장
+    await workbook.xlsx.writeFile("assets/He.xlsx");
+
+    // ✅ 6. Git 푸시
+    await pushToGit();
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("💥 저장 실패:", err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 
 
 
