@@ -452,55 +452,74 @@ app.post("/api/he/save", async (req, res) => {
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.readFile("assets/He.xlsx");
 
-    // ✅ 3. "일정" 시트 업데이트
+    // ✅ 3. 일정 시트 업데이트
     const sheet1 = workbook.getWorksheet("일정");
-    const headers1 = sheet1.getRow(1).values.slice(1); // A열부터
-    let updated = false;
 
-    sheet1.eachRow((row, rowNumber) => {
-      if (rowNumber === 1) return;
-      const customer = row.getCell(headers1.indexOf("고객사") + 1).value;
-      if (customer === newRecord["고객사"]) {
-        row.getCell(headers1.indexOf("충진일") + 1).value = newRecord["충진일"];
-        row.getCell(headers1.indexOf("다음충진일") + 1).value = newRecord["다음충진일"];
-        row.getCell(headers1.indexOf("충진주기(개월)") + 1).value = newRecord["충진주기(개월)"]; // ✅ 추가}
-        updated = true;
+    json.forEach((newRecord) => {
+      const { 고객사, 지역, Magnet, 충진일, 다음충진일, "충진주기(개월)": 주기 } = newRecord;
+
+      // 1행: 헤더, 2행부터 데이터 시작
+      const row = sheet1.findRow((row, idx) => {
+        if (idx < 3) return false; // 헤더 제외
+
+        const rowCustomer = String(row.getCell("A").value || "").trim();
+        const rowRegion = String(row.getCell("B").value || "").trim();
+        const rowMagnet = String(row.getCell("C").value || "").trim();
+
+        return (
+          rowCustomer === 고객사 &&
+          rowRegion === 지역 &&
+          rowMagnet === Magnet
+        );
+      });
+
+      if (row) {
+        row.getCell("D").value = 충진일;
+        row.getCell("E").value = 다음충진일;
+        row.getCell("F").value = 주기;
+        console.log(`✅ 일정 업데이트: ${고객사}, ${Magnet}`);
+      } else {
+        console.warn(`⚠️ 일정 시트에서 '${고객사}, ${Magnet}'을 찾지 못했습니다.`);
       }
     });
 
-    if (!updated) {
-      console.warn("⚠️ 해당 고객사를 일정 시트에서 찾지 못했습니다.");
-    }
     
     // ✅ 4. "기록" 시트에 로그 추가 (고객사별 열)
     const sheet2 = workbook.getWorksheet("기록");
-    const headerRow = sheet2.getRow(1);
-    const customerNames = headerRow.values.slice(2); // C열부터 (A:고객사, B:지역 제외)
+    const headerRow1 = sheet2.getRow(1); // 고객사
+    const headerRow2 = sheet2.getRow(2); // 지역
+    const headerRow3 = sheet2.getRow(3); // Magnet
 
-    const newCustomerName = newRecord["고객사"].trim();
+    json.forEach((newRecord) => {
+      const newCustomer = newRecord["고객사"]?.trim();
+      const newRegion = newRecord["지역"]?.trim();
+      const newMagnet = newRecord["Magnet"]?.trim();
+      const chargeDate = newRecord["충진일"];
 
-    const customerIndex = customerNames.findIndex(cell => {
-      const name = typeof cell === "object" && cell?.text ? cell.text : String(cell || "").trim();
-      return name === newCustomerName;
-    });
+      let targetCol = -1;
+      for (let i = 2; i <= sheet2.columnCount; i++) {
+        const customer = String(headerRow1.getCell(i).value || "").trim();
+        const region = String(headerRow2.getCell(i).value || "").trim();
+        const magnet = String(headerRow3.getCell(i).value || "").trim();
 
-
-    // 엑셀의 실제 열 번호 계산
-    if (customerIndex !== -1) {
-      const targetCol = customerIndex + 2; // C열부터 시작이므로 +2
-      const firstRecordRow = 3; // 기록은 항상 3행부터 시작
-      let rowIndex = firstRecordRow;
-
-      // 이미 값이 들어 있는 마지막 행 아래에 새 기록 추가
-      while (sheet2.getCell(rowIndex, targetCol).value) {
-        rowIndex++;
+        if (customer === newCustomer && region === newRegion && magnet === newMagnet) {
+          targetCol = i;
+          break;
+        }
       }
 
-      sheet2.getCell(rowIndex, targetCol).value = newRecord["충진일"];
-      console.log(`✅ ${newRecord["고객사"]} 기록 ${rowIndex}행에 저장됨`);
-    } else {
-      console.warn("⚠️ 기록 시트에 해당 고객사 열이 없습니다.");
-}
+      if (targetCol !== -1) {
+        let rowIndex = 4;
+        while (sheet2.getCell(rowIndex, targetCol).value) {
+          rowIndex++;
+        }
+        sheet2.getCell(rowIndex, targetCol).value = chargeDate;
+        console.log(`✅ ${newCustomer} (${newRegion} / ${newMagnet}) → ${rowIndex}행 기록됨`);
+      } else {
+        console.warn(`❗ ${newCustomer} (${newRegion} / ${newMagnet})를 기록 시트에서 찾을 수 없습니다.`);
+      }
+    });
+
 
 
 
