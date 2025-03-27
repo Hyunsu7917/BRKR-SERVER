@@ -474,21 +474,31 @@ app.post("/api/he/save", async (req, res) => {
     
     // ✅ 4. "기록" 시트에 로그 추가 (고객사별 열)
     const sheet2 = workbook.getWorksheet("기록");
-    const headerRow = sheet2.getRow(1);
-    const customerHeaders = headerRow.values.slice(1); // A열 제외
+    const headerRow = sheet2.getRow(1); // 1행: 고객사 이름들 (A열 = 라벨)
+    const customerNames = headerRow.values.slice(2); // A, B열 제외 (C열부터 시작)
 
-    const customerNames = headerRow.values.slice(1); // A열 제외한 고객사들
+    // 고객사 이름 위치 찾기
     const customerIndex = customerNames.findIndex(
       name => typeof name === "string" && name.trim() === newRecord["고객사"]
     );
 
+    // 엑셀의 실제 열 번호 계산
     if (customerIndex !== -1) {
-      const targetCol = customerIndex + 2; // B열이 2이므로 +2
-      const lastRow = sheet2.lastRow.number;
-      sheet2.getCell(lastRow + 1, targetCol).value = newRecord["충진일"];
-    } else {
-      console.warn("⚠️ 기록 시트에 해당 고객사 열이 없습니다.");
-    }
+      const targetCol = customerIndex + 2; // C열부터 시작이므로 +2
+      const firstRecordRow = 3; // 기록은 항상 3행부터 시작
+      let rowIndex = firstRecordRow;
+
+      // 이미 값이 들어 있는 마지막 행 아래에 새 기록 추가
+      while (sheet2.getCell(rowIndex, targetCol).value) {
+        rowIndex++;
+      }
+
+  sheet2.getCell(rowIndex, targetCol).value = newRecord["충진일"];
+  console.log(`✅ ${newRecord["고객사"]} 기록 ${rowIndex}행에 저장됨`);
+} else {
+  console.warn("⚠️ 기록 시트에 해당 고객사 열이 없습니다.");
+}
+
 
 
     // ✅ 5. 저장
