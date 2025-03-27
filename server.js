@@ -463,6 +463,7 @@ app.post("/api/he/save", async (req, res) => {
       if (customer === newRecord["고객사"]) {
         row.getCell(headers1.indexOf("충진일") + 1).value = newRecord["충진일"];
         row.getCell(headers1.indexOf("다음충진일") + 1).value = newRecord["다음충진일"];
+        row.getCell(headers1.indexOf("충진주기(개월)") + 1).value = newRecord["충진주기(개월)"]; // ✅ 추가}
         updated = true;
       }
     });
@@ -470,20 +471,30 @@ app.post("/api/he/save", async (req, res) => {
     if (!updated) {
       console.warn("⚠️ 해당 고객사를 일정 시트에서 찾지 못했습니다.");
     }
-
-    // ✅ 4. "기록" 시트 로그 추가 (행 단위)
+    
+    // ✅ 4. "기록" 시트에 로그 추가 (고객사별 열)
     const sheet2 = workbook.getWorksheet("기록");
     const headerRow = sheet2.getRow(1);
-    const customerNames = headerRow.values.slice(1); // A열 제외
-    const colIndex = customerNames.indexOf(newRecord["고객사"]);
+    const customerHeaders = headerRow.values.slice(1); // A열 제외
 
-    if (colIndex !== -1) {
-      const targetCol = colIndex + 2; // +1 for 0-index, +1 for slice(1)
-      const lastRow = sheet2.lastRow.number;
-      sheet2.getCell(lastRow + 1, targetCol).value = newRecord["충진일"];
+    const customerIndex = customerHeaders.indexOf(newRecord["고객사"]);
+    if (customerIndex !== -1) {
+      const col = customerIndex + 2; // +1 for 0-index, +1 for A열 제외
+      let lastRow = sheet2.lastRow.number;
+
+      // 현재 열 기준으로 마지막 데이터 아래 찾기
+      while (
+        sheet2.getCell(lastRow, col).value === null &&
+        lastRow > 1
+      ) {
+        lastRow--;
+      }
+
+      sheet2.getCell(lastRow + 1, col).value = newRecord["충진일"];
     } else {
       console.warn("⚠️ 기록 시트에 해당 고객사 열이 없습니다.");
     }
+
 
     // ✅ 5. 저장
     await workbook.xlsx.writeFile("assets/He.xlsx");
