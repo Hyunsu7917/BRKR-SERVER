@@ -50,6 +50,14 @@ try {
 } catch (err) {
   console.error("⚠️ Git init/pull 오류:", err.message);
 }
+try {
+  execSync(`git config --global user.email "keyower159@gmail.com"`);
+  execSync(`git config --global user.name "BRKR-HELIUM-BOT"`);
+  console.log("✅ Git 사용자 정보 설정 완료");
+} catch (err) {
+  console.error("❌ Git 사용자 설정 실패:", err.message);
+}
+
 function pushToGit() {
   return new Promise((resolve, reject) => {
     exec(
