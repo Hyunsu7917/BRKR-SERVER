@@ -67,6 +67,10 @@ function pushToGit() {
         env: {
           ...process.env,
           GIT_SSH_COMMAND: `ssh -i ${process.env.PRIVATE_KEY_PATH}`,
+          GIT_AUTHOR_NAME: "BRKR-AUTO",
+          GIT_AUTHOR_EMAIL: "keyower159@gmail.com",
+          GIT_COMMITTER_NAME: "BRKR-AUTO",
+          GIT_COMMITTER_EMAIL: "keyower159@gmail.com",
         },
       },
       (err, stdout, stderr) => {
