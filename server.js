@@ -28,8 +28,9 @@ try {
 try {
   const gitEnv = {
     ...process.env,
-    GIT_SSH_COMMAND: 'ssh -i ~/.ssh/render_deploy_key -o StrictHostKeyChecking=no',
+    GIT_SSH_COMMAND: 'ssh -i /opt/render/.ssh/render_deploy_key -o StrictHostKeyChecking=no',
   };
+  
 
   execSync("git init", { cwd: process.cwd(), env: gitEnv });
 
@@ -66,7 +67,7 @@ function pushToGit() {
         cwd: __dirname,
         env: {
           ...process.env,
-          GIT_SSH_COMMAND: `ssh -i ${process.env.PRIVATE_KEY_PATH}`,
+          GIT_SSH_COMMAND: `ssh -i /opt/render/.ssh/render_deploy_key`,
           GIT_AUTHOR_NAME: "BRKR-AUTO",
           GIT_AUTHOR_EMAIL: "keyower159@gmail.com",
           GIT_COMMITTER_NAME: "BRKR-AUTO",
