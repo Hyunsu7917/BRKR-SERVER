@@ -688,35 +688,36 @@ app.get("/excel/he/schedule", async (req, res) => {
   }
 });
 app.post("/api/he/save", async (req, res) => {
-  const newRecord = req.body; // row, 충진일, 다음충진일 포함
+  const records = req.body;
   const filePath = path.join(__dirname, "he-usage-backup.json");
+
+  if (!Array.isArray(records)) {
+    return res.status(400).json({ success: false, message: "데이터 형식이 배열이 아닙니다." });
+  }
 
   try {
     // ✅ 1. JSON 백업 저장
     let backup = [];
     if (fs.existsSync(filePath)) {
-      const json = JSON.parse(fs.readFileSync(filePath));
-      backup = Array.isArray(json) ? json : []; // <-- 안전하게 배열로 보장
+      const raw = fs.readFileSync(filePath, "utf8");
+      const json = JSON.parse(raw);
+
+      // ✅ 중첩 배열 방지
+      backup = Array.isArray(json[0]) ? json.flat() : json;
     }
 
-    backup.push(newRecord);
+    backup.push(...records); // 배열 그대로 풀어서 추가
     fs.writeFileSync(filePath, JSON.stringify(backup, null, 2));
 
     // ✅ 2. He.xlsx 열기
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.readFile("assets/He.xlsx");
-    
+
     // ✅ 3. 일정 시트 업데이트
     const sheet1 = workbook.getWorksheet("일정");
+    const rows = sheet1.getRows(2, sheet1.rowCount - 1); // 2행부터
 
-    const jsonData = req.body;
-    if (!Array.isArray(jsonData)) {
-      return res.status(400).send("데이터 형식이 배열이 아닙니다.");
-    }
-
-    const rows = sheet1.getRows(2, sheet1.rowCount - 1); // 2행부터 데이터 시작
-
-    jsonData.forEach((record) => {
+    records.forEach((record) => {
       const customer = record["고객사"]?.toString().trim();
       const region = record["지역"]?.toString().trim();
       const magnet = record["Magnet"]?.toString().trim();
@@ -741,21 +742,17 @@ app.post("/api/he/save", async (req, res) => {
       }
     });
 
-
-    
-
-    
-    // ✅ 4. "기록" 시트에 로그 추가 (고객사별 열)
+    // ✅ 4. 기록 시트 업데이트
     const sheet2 = workbook.getWorksheet("기록");
     const headerRow1 = sheet2.getRow(1); // 고객사
     const headerRow2 = sheet2.getRow(2); // 지역
     const headerRow3 = sheet2.getRow(3); // Magnet
 
-    jsonData.forEach((newRecord) => {
-      const newCustomer = newRecord["고객사"]?.trim();
-      const newRegion = newRecord["지역"]?.trim();
-      const newMagnet = newRecord["Magnet"]?.trim();
-      const chargeDate = newRecord["충진일"];
+    records.forEach((record) => {
+      const newCustomer = record["고객사"]?.trim();
+      const newRegion = record["지역"]?.trim();
+      const newMagnet = record["Magnet"]?.trim();
+      const chargeDate = record["충진일"];
 
       let targetCol = -1;
       for (let i = 2; i <= sheet2.columnCount; i++) {
@@ -781,9 +778,6 @@ app.post("/api/he/save", async (req, res) => {
       }
     });
 
-
-
-
     // ✅ 5. 저장
     await workbook.xlsx.writeFile("assets/He.xlsx");
 
@@ -796,6 +790,7 @@ app.post("/api/he/save", async (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 });
+
 app.post('/api/set-helium-reservation', async (req, res) => {
   const { 고객사, 지역, Magnet, 충진일, 예약여부 } = req.body;
 
