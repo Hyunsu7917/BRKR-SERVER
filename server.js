@@ -796,10 +796,75 @@ app.post("/api/he/save", async (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 });
+app.post('/api/set-helium-reservation', async (req, res) => {
+  const { 고객사, 지역, Magnet, 충진일, 예약여부 } = req.body;
+
+  try {
+    // 1. 기존 백업 파일 로드
+    const usagePath = path.join(__dirname, 'he-usage-backup.json');
+    let usageData = [];
+    if (fs.existsSync(usagePath)) {
+      usageData = JSON.parse(fs.readFileSync(usagePath, 'utf-8'));
+    }
+
+    // 2. 동일한 고객사+지역+Magnet+충진일 항목 찾기
+    let found = false;
+    usageData = usageData.map(entry => {
+      if (
+        entry['고객사'] === 고객사 &&
+        entry['지역'] === 지역 &&
+        entry['Magnet'] === Magnet &&
+        entry['충진일'] === 충진일
+      ) {
+        found = true;
+        return { ...entry, 예약여부 };
+      }
+      return entry;
+    });
+
+    // 없으면 새 항목 추가
+    if (!found) {
+      usageData.push({ 고객사, 지역, Magnet, 충진일, 예약여부 });
+    }
+
+    // 3. 백업 파일 저장
+    fs.writeFileSync(usagePath, JSON.stringify(usageData, null, 2), 'utf-8');
+
+    // 4. Git commit + push
+    const exec = require('child_process').exec;
+    exec(`git add ${usagePath} && git commit -m "Update He reservation for ${고객사}" && git push`, {
+      cwd: __dirname,
+      env: {
+        ...process.env,
+        GIT_SSH_COMMAND: `ssh -i ${process.env.SSH_PRIVATE_KEY_PATH}`,
+      },
+    });
+
+    // 5. Excel 업데이트 스크립트 실행
+    const { execSync } = require('child_process');
+    execSync('node update-he-excel.js', { stdio: 'inherit' });
+
+    res.status(200).json({ success: true, message: '예약 정보 저장 완료' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: '예약 처리 중 오류 발생' });
+  }
+});
 app.get('/api/check-manual-mode', (req, res) => {
   const lockPath = path.join(__dirname, 'manual-mode.txt');
   const isLocked = fs.existsSync(lockPath);
   res.json({ manual: isLocked });
+});
+// 서버에 추가
+app.post('/api/lock', (req, res) => {
+  fs.writeFileSync(path.join(__dirname, 'manual-mode.txt'), 'LOCKED');
+  res.json({ success: true });
+});
+
+app.post('/api/unlock', (req, res) => {
+  const filePath = path.join(__dirname, 'manual-mode.txt');
+  if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+  res.json({ success: true });
 });
 
 // ✅ 서버 시작
