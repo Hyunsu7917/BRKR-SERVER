@@ -701,12 +701,10 @@ app.post("/api/he/save", async (req, res) => {
     if (fs.existsSync(filePath)) {
       const raw = fs.readFileSync(filePath, "utf8");
       const json = JSON.parse(raw);
-
-      // ✅ 중첩 배열 방지
       backup = Array.isArray(json[0]) ? json.flat() : json;
     }
 
-    backup.push(...records); // 배열 그대로 풀어서 추가
+    backup.push(...records);
     fs.writeFileSync(filePath, JSON.stringify(backup, null, 2));
 
     // ✅ 2. He.xlsx 열기
@@ -715,7 +713,7 @@ app.post("/api/he/save", async (req, res) => {
 
     // ✅ 3. 일정 시트 업데이트
     const sheet1 = workbook.getWorksheet("일정");
-    const rows = sheet1.getRows(2, sheet1.rowCount - 1); // 2행부터
+    const rows = sheet1.getRows(2, sheet1.rowCount - 1);
 
     records.forEach((record) => {
       const customer = record["고객사"]?.toString().trim();
@@ -731,9 +729,13 @@ app.post("/api/he/save", async (req, res) => {
         const rowMagnet = row.getCell(3).value?.toString().trim();
         return rowCustomer === customer && rowRegion === region && rowMagnet === magnet;
       });
-      console.log("👉 현재 엑셀 행:", rowCustomer, rowRegion, rowMagnet); // 이거 추가
 
       if (matchedRow) {
+        const rowCustomer = matchedRow.getCell(1).value?.toString().trim();
+        const rowRegion = matchedRow.getCell(2).value?.toString().trim();
+        const rowMagnet = matchedRow.getCell(3).value?.toString().trim();
+        console.log("👉 현재 엑셀 행:", rowCustomer, rowRegion, rowMagnet);
+
         matchedRow.getCell(4).value = chargeDate;
         matchedRow.getCell(5).value = nextChargeDate;
         matchedRow.getCell(6).value = cycle;
@@ -745,9 +747,9 @@ app.post("/api/he/save", async (req, res) => {
 
     // ✅ 4. 기록 시트 업데이트
     const sheet2 = workbook.getWorksheet("기록");
-    const headerRow1 = sheet2.getRow(1); // 고객사
-    const headerRow2 = sheet2.getRow(2); // 지역
-    const headerRow3 = sheet2.getRow(3); // Magnet
+    const headerRow1 = sheet2.getRow(1);
+    const headerRow2 = sheet2.getRow(2);
+    const headerRow3 = sheet2.getRow(3);
 
     records.forEach((record) => {
       const newCustomer = record["고객사"]?.trim();
@@ -791,6 +793,7 @@ app.post("/api/he/save", async (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 });
+
 
 app.post('/api/set-helium-reservation', async (req, res) => {
   const { 고객사, 지역, Magnet, 충진일, 예약여부 } = req.body;
