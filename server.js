@@ -796,16 +796,12 @@ app.post("/api/he/save", async (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 });
-export const checkManualMode = async () => {
-  try {
-    const res = await fetch(`${serverUrl}/api/check-manual-mode`);
-    const { manual } = await res.json();
-    return manual;
-  } catch (err) {
-    console.error('🔌 서버 연결 실패 (manual mode 확인)', err);
-    return false;
-  }
-};
+app.get('/api/check-manual-mode', (req, res) => {
+  const lockPath = path.join(__dirname, 'manual-mode.txt');
+  const isLocked = fs.existsSync(lockPath);
+  res.json({ manual: isLocked });
+});
+
 // ✅ 서버 시작
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
