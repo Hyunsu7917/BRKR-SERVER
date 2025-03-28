@@ -850,12 +850,23 @@ app.post('/api/set-helium-reservation', async (req, res) => {
     res.status(500).json({ success: false, message: '예약 처리 중 오류 발생' });
   }
 });
+
 app.get('/api/check-manual-mode', (req, res) => {
   const lockPath = path.join(__dirname, 'manual-mode.txt');
   const isLocked = fs.existsSync(lockPath);
   res.json({ manual: isLocked });
 });
 
+app.post('/api/lock', (req, res) => {
+  fs.writeFileSync(path.join(__dirname, 'manual-mode.txt'), 'LOCKED');
+  res.json({ success: true });
+});
+
+app.post('/api/unlock', (req, res) => {
+  const filePath = path.join(__dirname, 'manual-mode.txt');
+  if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+  res.json({ success: true });
+});
 // ✅ 서버 시작
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
