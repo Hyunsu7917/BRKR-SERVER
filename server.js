@@ -731,6 +731,7 @@ app.post("/api/he/save", async (req, res) => {
         const rowMagnet = row.getCell(3).value?.toString().trim();
         return rowCustomer === customer && rowRegion === region && rowMagnet === magnet;
       });
+      console.log("👉 현재 엑셀 행:", rowCustomer, rowRegion, rowMagnet); // 이거 추가
 
       if (matchedRow) {
         matchedRow.getCell(4).value = chargeDate;
