@@ -855,17 +855,6 @@ app.get('/api/check-manual-mode', (req, res) => {
   const isLocked = fs.existsSync(lockPath);
   res.json({ manual: isLocked });
 });
-// 서버에 추가
-app.post('/api/lock', (req, res) => {
-  fs.writeFileSync(path.join(__dirname, 'manual-mode.txt'), 'LOCKED');
-  res.json({ success: true });
-});
-
-app.post('/api/unlock', (req, res) => {
-  const filePath = path.join(__dirname, 'manual-mode.txt');
-  if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-  res.json({ success: true });
-});
 
 // ✅ 서버 시작
 app.listen(PORT, () => {
