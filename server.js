@@ -796,10 +796,16 @@ app.post("/api/he/save", async (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 });
-
-
-
-
+export const checkManualMode = async () => {
+  try {
+    const res = await fetch(`${serverUrl}/api/check-manual-mode`);
+    const { manual } = await res.json();
+    return manual;
+  } catch (err) {
+    console.error('🔌 서버 연결 실패 (manual mode 확인)', err);
+    return false;
+  }
+};
 // ✅ 서버 시작
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
