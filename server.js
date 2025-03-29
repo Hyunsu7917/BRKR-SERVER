@@ -732,9 +732,10 @@ app.post("/api/he/save", async (req, res) => {
       });
 
       if (matchedRow) {
-        matchedRow.getCell(4).value = chargeDate ? String(chargeDate) : "";
-        matchedRow.getCell(5).value = nextChargeDate ? String(nextChargeDate) : "";
-        matchedRow.getCell(6).value = Number(cycle) || "";  // 숫자로 변환, 실패하면 빈 값
+        matchedRow.getCell(4).value = chargeDate ? String(chargeDate) : undefined;
+        matchedRow.getCell(5).value = nextChargeDate ? String(nextChargeDate) : undefined;
+        matchedRow.getCell(6).value = cycle ? Number(cycle) : undefined;
+
       
         console.log(`✅ 일정 업데이트: ${customer} / ${region} / ${magnet}`);
       } else {
@@ -776,6 +777,8 @@ app.post("/api/he/save", async (req, res) => {
         console.warn(`❗ ${newCustomer} (${newRegion} / ${newMagnet})를 기록 시트에서 찾을 수 없습니다.`);
       }
     });
+    // ✅ 4.5 일정 시트 불필요한 열 제거
+    sheet1.spliceColumns(7, sheet1.columnCount - 6); // G열 이후 날림
 
     // ✅ 5. 저장 → He.xlsx로 저장
     workbook.calcProperties.fullCalcOnLoad = true;
