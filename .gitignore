@@ -1,0 +1,18 @@
+# ✅ Excel 임시 파일
+~$*.xlsx
+
+# ✅ Node.js 기본
+node_modules/
+.env
+.DS_Store
+
+# ✅ 로그 및 백업 파일
+*.log
+*.bak
+*.tmp
+he-usage-backup.json
+usage-backup.json
+
+# ✅ 자동 생성된 IDE/OS 파일
+.vscode/
+Thumbs.db
