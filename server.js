@@ -716,12 +716,13 @@ app.post("/api/he/save", async (req, res) => {
     const rows = sheet1.getRows(2, sheet1.rowCount - 1);
 
     records.forEach((record) => {
-      const customer = record["고객사"]?.toString().trim();
-      const region = record["지역"]?.toString().trim();
-      const magnet = record["Magnet"]?.toString().trim();
+      const customer = String(record["고객사"] ?? "").trim();
+      const region = String(record["지역"] ?? "").trim();
+      const magnet = String(record["Magnet"] ?? "").trim();
       const chargeDate = record["충진일"];
       const nextChargeDate = record["다음충진일"];
       const cycle = record["충진주기(개월)"];
+
 
       const matchedRow = rows.find((row) => {
         const rowCustomer = row.getCell(1).value?.toString().trim();
@@ -747,9 +748,9 @@ app.post("/api/he/save", async (req, res) => {
     const headerRow3 = sheet2.getRow(3);
 
     records.forEach((record) => {
-      const newCustomer = record["고객사"]?.toString().trim();
-      const newRegion = record["지역"]?.toString().trim();
-      const newMagnet = record["Magnet"]?.toString().trim();
+      const newCustomer = String(record["고객사"] ?? "").trim();
+      const newRegion = String(record["지역"] ?? "").trim();
+      const newMagnet = String(record["Magnet"] ?? "").trim();
       const chargeDate = record["충진일"];
 
       let targetCol = -1;
