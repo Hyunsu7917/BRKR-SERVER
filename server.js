@@ -732,13 +732,15 @@ app.post("/api/he/save", async (req, res) => {
       });
 
       if (matchedRow) {
-        matchedRow.getCell(4).value = chargeDate;
-        matchedRow.getCell(5).value = nextChargeDate;
-        matchedRow.getCell(6).value = cycle;
+        matchedRow.getCell(4).value = chargeDate ? String(chargeDate) : "";
+        matchedRow.getCell(5).value = nextChargeDate ? String(nextChargeDate) : "";
+        matchedRow.getCell(6).value = Number(cycle) || "";  // 숫자로 변환, 실패하면 빈 값
+      
         console.log(`✅ 일정 업데이트: ${customer} / ${region} / ${magnet}`);
       } else {
         console.warn(`❌ 일정에서 ${customer} / ${region} / ${magnet} 찾지 못함`);
       }
+      
     });
 
     // ✅ 4. 기록 시트 업데이트
@@ -768,7 +770,7 @@ app.post("/api/he/save", async (req, res) => {
       if (targetCol !== -1) {
         let rowIndex = 4;
         while (sheet2.getCell(rowIndex, targetCol).value) rowIndex++;
-        sheet2.getCell(rowIndex, targetCol).value = chargeDate;
+        sheet2.getCell(rowIndex, targetCol).value = chargeDate ? String(chargeDate) : "";
         console.log(`✅ ${newCustomer} (${newRegion} / ${newMagnet}) → ${rowIndex}행 기록됨`);
       } else {
         console.warn(`❗ ${newCustomer} (${newRegion} / ${newMagnet})를 기록 시트에서 찾을 수 없습니다.`);
@@ -776,6 +778,7 @@ app.post("/api/he/save", async (req, res) => {
     });
 
     // ✅ 5. 저장 → He.xlsx로 저장
+    workbook.calcProperties.fullCalcOnLoad = true;
     await workbook.xlsx.writeFile("assets/He.xlsx");
 
     // ✅ 6. Git 푸시
