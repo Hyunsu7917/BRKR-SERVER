@@ -688,7 +688,7 @@ app.get("/excel/he/schedule", async (req, res) => {
   }
 });
 // ✅ Helium Excel 저장 + Git 반영
-aapp.post("/api/he/save", async (req, res) => {
+app.post("/api/he/save", async (req, res) => {
   const records = req.body;
   const filePath = path.join(__dirname, "he-usage-backup.json");
 
