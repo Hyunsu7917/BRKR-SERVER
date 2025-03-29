@@ -730,9 +730,11 @@ app.post("/api/he/save", async (req, res) => {
       });
 
       if (matchedRow) {
-        matchedRow.getCell(4).value = chargeDate;
-        matchedRow.getCell(5).value = nextChargeDate;
-        matchedRow.getCell(6).value = cycle;
+        // ✅ 수정된 코드
+        matchedRow.getCell(4).value = chargeDate || "";
+        matchedRow.getCell(5).value = nextChargeDate || "";
+        matchedRow.getCell(6).value = cycle || "";
+
         console.log(`✅ 일정 업데이트: ${customer} / ${region} / ${magnet}`);
       } else {
         console.warn(`❌ 일정에서 ${customer} / ${region} / ${magnet} 찾지 못함`);
@@ -768,7 +770,7 @@ app.post("/api/he/save", async (req, res) => {
         while (sheet2.getCell(rowIndex, targetCol).value) {
           rowIndex++;
         }
-        sheet2.getCell(rowIndex, targetCol).value = chargeDate;
+        sheet2.getCell(rowIndex, targetCol).value = chargeDate || "";
         console.log(`🟢 ${newCustomer} ${newRegion} / ${newMagnet} → ${rowIndex}행 기록됨`);
       } else {
         console.warn(`❗ ${newCustomer} ${newRegion} / ${newMagnet} 기록 시트에서 찾을 수 없음`);
