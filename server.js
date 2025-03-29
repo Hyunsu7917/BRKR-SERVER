@@ -708,7 +708,7 @@ app.post("/api/he/save", async (req, res) => {
 
     // ✅ 2. 템플릿 열기 (He-template.xlsx)
     const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.readFile("assets/He-template.xlsx");
+    await workbook.xlsx.readFile("assets/He.xlsx");
 
     // ✅ 3. 일정 시트 업데이트
     const sheet1 = workbook.getWorksheet("일정");
