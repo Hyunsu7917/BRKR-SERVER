@@ -703,17 +703,16 @@ app.post("/api/he/save", async (req, res) => {
       const json = JSON.parse(raw);
       backup = Array.isArray(json[0]) ? json.flat() : json;
     }
-
     backup.push(...records);
     fs.writeFileSync(filePath, JSON.stringify(backup, null, 2));
 
-    // ✅ 2. He.xlsx 열기
+    // ✅ 2. 템플릿 열기 (He-template.xlsx)
     const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.readFile("assets/He.xlsx");
+    await workbook.xlsx.readFile("assets/He-template.xlsx");
 
     // ✅ 3. 일정 시트 업데이트
     const sheet1 = workbook.getWorksheet("일정");
-    const rows = sheet1.getRows(2, sheet1.rowCount - 1); // 2행부터
+    const rows = sheet1.getRows(2, sheet1.rowCount - 1);
 
     records.forEach((record) => {
       const customer = record["고객사"]?.toString().trim();
@@ -724,9 +723,9 @@ app.post("/api/he/save", async (req, res) => {
       const cycle = record["충진주기(개월)"];
 
       const matchedRow = rows.find((row) => {
-        const rowCustomer = String(row.getCell(1).value || "").trim();
-        const rowRegion = String(row.getCell(2).value || "").trim();
-        const rowMagnet = String(row.getCell(3).value || "").trim();
+        const rowCustomer = row.getCell(1).value?.toString().trim();
+        const rowRegion = row.getCell(2).value?.toString().trim();
+        const rowMagnet = row.getCell(3).value?.toString().trim();
         return rowCustomer === customer && rowRegion === region && rowMagnet === magnet;
       });
 
@@ -740,17 +739,16 @@ app.post("/api/he/save", async (req, res) => {
       }
     });
 
-    
     // ✅ 4. 기록 시트 업데이트
     const sheet2 = workbook.getWorksheet("기록");
-    const headerRow1 = sheet2.getRow(1); // 고객사
-    const headerRow2 = sheet2.getRow(2); // 지역
-    const headerRow3 = sheet2.getRow(3); // Magnet
+    const headerRow1 = sheet2.getRow(1);
+    const headerRow2 = sheet2.getRow(2);
+    const headerRow3 = sheet2.getRow(3);
 
     records.forEach((record) => {
-      const newCustomer = record["고객사"]?.toString().trim();
-      const newRegion = record["지역"]?.toString().trim();
-      const newMagnet = record["Magnet"]?.toString().trim();
+      const newCustomer = record["고객사"]?.trim();
+      const newRegion = record["지역"]?.trim();
+      const newMagnet = record["Magnet"]?.trim();
       const chargeDate = record["충진일"];
 
       let targetCol = -1;
@@ -771,14 +769,13 @@ app.post("/api/he/save", async (req, res) => {
           rowIndex++;
         }
         sheet2.getCell(rowIndex, targetCol).value = chargeDate;
-        console.log(`✅ ${newCustomer} / ${newRegion} / ${newMagnet} → ${rowIndex}행 기록됨`);
+        console.log(`🟢 ${newCustomer} ${newRegion} / ${newMagnet} → ${rowIndex}행 기록됨`);
       } else {
-        console.warn(`❗ ${newCustomer} / ${newRegion} / ${newMagnet} 를 기록 시트에서 찾을 수 없습니다.`);
+        console.warn(`❗ ${newCustomer} ${newRegion} / ${newMagnet} 기록 시트에서 찾을 수 없음`);
       }
     });
 
-
-    // ✅ 5. 저장
+    // ✅ 5. 저장 → He.xlsx로 저장
     await workbook.xlsx.writeFile("assets/He.xlsx");
 
     // ✅ 6. Git 푸시
