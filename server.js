@@ -687,6 +687,7 @@ app.get("/excel/he/schedule", async (req, res) => {
     res.status(500).json({ error: "서버 에러" });
   }
 });
+// ✅ Helium Excel 저장 + Git 반영
 app.post("/api/he/save", async (req, res) => {
   const records = req.body;
   const filePath = path.join(__dirname, "he-usage-backup.json");
@@ -696,7 +697,7 @@ app.post("/api/he/save", async (req, res) => {
   }
 
   try {
-    // ✅ 1. JSON 백업 저장
+    // ✅ 1. 백업 JSON 저장 (중첩 방지)
     let backup = [];
     if (fs.existsSync(filePath)) {
       const raw = fs.readFileSync(filePath, "utf8");
@@ -706,7 +707,7 @@ app.post("/api/he/save", async (req, res) => {
     backup.push(...records);
     fs.writeFileSync(filePath, JSON.stringify(backup, null, 2));
 
-    // ✅ 2. 템플릿 열기 (He-template.xlsx)
+    // ✅ 2. He.xlsx 열기
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.readFile("assets/He.xlsx");
 
@@ -730,11 +731,9 @@ app.post("/api/he/save", async (req, res) => {
       });
 
       if (matchedRow) {
-        // ✅ 수정된 코드
-        matchedRow.getCell(4).value = chargeDate || "";
-        matchedRow.getCell(5).value = nextChargeDate || "";
-        matchedRow.getCell(6).value = cycle || "";
-
+        matchedRow.getCell(4).value = chargeDate;
+        matchedRow.getCell(5).value = nextChargeDate;
+        matchedRow.getCell(6).value = cycle;
         console.log(`✅ 일정 업데이트: ${customer} / ${region} / ${magnet}`);
       } else {
         console.warn(`❌ 일정에서 ${customer} / ${region} / ${magnet} 찾지 못함`);
@@ -748,9 +747,9 @@ app.post("/api/he/save", async (req, res) => {
     const headerRow3 = sheet2.getRow(3);
 
     records.forEach((record) => {
-      const newCustomer = record["고객사"]?.trim();
-      const newRegion = record["지역"]?.trim();
-      const newMagnet = record["Magnet"]?.trim();
+      const newCustomer = record["고객사"]?.toString().trim();
+      const newRegion = record["지역"]?.toString().trim();
+      const newMagnet = record["Magnet"]?.toString().trim();
       const chargeDate = record["충진일"];
 
       let targetCol = -1;
@@ -767,13 +766,11 @@ app.post("/api/he/save", async (req, res) => {
 
       if (targetCol !== -1) {
         let rowIndex = 4;
-        while (sheet2.getCell(rowIndex, targetCol).value) {
-          rowIndex++;
-        }
-        sheet2.getCell(rowIndex, targetCol).value = chargeDate || "";
-        console.log(`🟢 ${newCustomer} ${newRegion} / ${newMagnet} → ${rowIndex}행 기록됨`);
+        while (sheet2.getCell(rowIndex, targetCol).value) rowIndex++;
+        sheet2.getCell(rowIndex, targetCol).value = chargeDate;
+        console.log(`✅ ${newCustomer} (${newRegion} / ${newMagnet}) → ${rowIndex}행 기록됨`);
       } else {
-        console.warn(`❗ ${newCustomer} ${newRegion} / ${newMagnet} 기록 시트에서 찾을 수 없음`);
+        console.warn(`❗ ${newCustomer} (${newRegion} / ${newMagnet})를 기록 시트에서 찾을 수 없습니다.`);
       }
     });
 
@@ -789,6 +786,7 @@ app.post("/api/he/save", async (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 });
+
 
 
 app.post('/api/set-helium-reservation', async (req, res) => {
