@@ -697,7 +697,7 @@ app.post("/api/he/save", async (req, res) => {
   }
 
   try {
-    // ✅ 백업 저장
+    // ✅ 1. 기존 백업 불러오기 + 중첩 배열 방지
     let backup = [];
     if (fs.existsSync(filePath)) {
       const raw = fs.readFileSync(filePath, "utf8");
@@ -708,16 +708,34 @@ app.post("/api/he/save", async (req, res) => {
     backup.push(...records);
     fs.writeFileSync(filePath, JSON.stringify(backup, null, 2));
 
-    // ✅ Excel 열기
+    // ✅ 2. 엑셀 파일 로드
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.readFile("assets/He.xlsx");
 
     const sheet1 = workbook.getWorksheet("일정");
     const sheet2 = workbook.getWorksheet("기록");
 
-    const rows = sheet1.getRows(2, sheet1.rowCount - 1)?.filter(Boolean) || [];
+    // ✅ 병합 해제 및 수식 제거
+    [sheet1, sheet2].forEach((sheet) => {
+      sheet.unMergeCells();
+      sheet.eachRow((row) => {
+        row.eachCell((cell) => {
+          if (cell.formula) delete cell.formula;
+        });
+      });
+    });
 
-    // ✅ 일정 업데이트
+    // ✅ G열 이후 불필요한 열 제거
+    if (sheet1.columnCount > 6) {
+      sheet1.spliceColumns(7, sheet1.columnCount - 6);
+    }
+
+    const rows = sheet1.getRows(2, sheet1.rowCount - 1);
+    const headerRow1 = sheet2.getRow(1);
+    const headerRow2 = sheet2.getRow(2);
+    const headerRow3 = sheet2.getRow(3);
+
+    // ✅ 3. 일정 시트 업데이트
     records.forEach((record) => {
       const customer = String(record["고객사"] ?? "").trim();
       const region = String(record["지역"] ?? "").trim();
@@ -743,11 +761,7 @@ app.post("/api/he/save", async (req, res) => {
       }
     });
 
-    // ✅ 기록 업데이트
-    const headerRow1 = sheet2.getRow(1);
-    const headerRow2 = sheet2.getRow(2);
-    const headerRow3 = sheet2.getRow(3);
-
+    // ✅ 4. 기록 시트 업데이트
     records.forEach((record) => {
       const newCustomer = String(record["고객사"] ?? "").trim();
       const newRegion = String(record["지역"] ?? "").trim();
@@ -776,29 +790,14 @@ app.post("/api/he/save", async (req, res) => {
       }
     });
 
-    // ✅ 수식 제거 (스타일 초기화 생략)
-    [sheet1, sheet2].forEach((sheet) => {
-      sheet.unMergeCells();
-      sheet.eachRow((row) => {
-        row.eachCell((cell) => {
-          if (cell.formula) delete cell.formula;
-        });
-      });
-    });
-
-    // ✅ G열 이후 제거 (깨짐 방지)
-    if (sheet1.columnCount > 6) {
-      sheet1.spliceColumns(7, sheet1.columnCount - 6);
-    }
-
-    // ✅ 저장
+    // ✅ 5. 저장 (엑셀)
     workbook.calcProperties.fullCalcOnLoad = true;
     await workbook.xlsx.writeFile("assets/He.xlsx", {
       useStyles: false,
-      useSharedStrings: false,
+      useSharedStrings: false
     });
 
-    await new Promise((resolve) => setTimeout(resolve, 300));
+    // ✅ 6. Git 푸시
     await pushToGit();
 
     res.json({ success: true });
@@ -807,6 +806,7 @@ app.post("/api/he/save", async (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 });
+
 
 app.post('/api/set-helium-reservation', async (req, res) => {
   const { 고객사, 지역, Magnet, 충진일, 예약여부 } = req.body;
