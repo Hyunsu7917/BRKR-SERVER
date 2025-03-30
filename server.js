@@ -724,20 +724,20 @@ app.post("/api/he/save", async (req, res) => {
     const headerRow1 = sheet2.getRow(1);
     const headerRow2 = sheet2.getRow(2);
     const headerRow3 = sheet2.getRow(3);
-   
+
     // ✅ 3. 일정 시트 업데이트
     records.forEach((record) => {
-      const customer = (record["고객사"] ?? "").trim();
-      const region = (record["지역"] ?? "").trim();
-      const magnet = (record["Magnet"] ?? "").trim();
+      const customer = String(record["고객사"] ?? "").trim();
+      const region = String(record["지역"] ?? "").trim();
+      const magnet = String(record["Magnet"] ?? "").trim();
       const chargeDate = record["충진일"];
       const nextChargeDate = record["다음충진일"];
       const cycle = record["충진주기(개월)"];
 
-      const matchedRow = sheet1.getRows(2, sheet1.rowCount - 1).find((row) => {
-        const rowCustomer = (row.getCell(1).value ?? "").toString().trim();
-        const rowRegion = (row.getCell(2).value ?? "").toString().trim();
-        const rowMagnet = (row.getCell(3).value ?? "").toString().trim();
+      const matchedRow = rows.find((row) => {
+        const rowCustomer = String(row.getCell(1).value ?? "").trim();
+        const rowRegion = String(row.getCell(2).value ?? "").trim();
+        const rowMagnet = String(row.getCell(3).value ?? "").trim();
         return rowCustomer === customer && rowRegion === region && rowMagnet === magnet;
       });
 
@@ -753,16 +753,17 @@ app.post("/api/he/save", async (req, res) => {
 
     // ✅ 4. 기록 시트 업데이트
     records.forEach((record) => {
-      const newCustomer = (record["고객사"] ?? "").trim();
-      const newRegion = (record["지역"] ?? "").trim();
-      const newMagnet = (record["Magnet"] ?? "").trim();
+      const newCustomer = String(record["고객사"] ?? "").trim();
+      const newRegion = String(record["지역"] ?? "").trim();
+      const newMagnet = String(record["Magnet"] ?? "").trim();
       const chargeDate = record["충진일"];
 
       let targetCol = -1;
       for (let i = 2; i <= sheet2.columnCount; i++) {
-        const customer = (sheet2.getRow(1).getCell(i).value ?? "").toString().trim();
-        const region = (sheet2.getRow(2).getCell(i).value ?? "").toString().trim();
-        const magnet = (sheet2.getRow(3).getCell(i).value ?? "").toString().trim();
+        const customer = String(headerRow1.getCell(i).value ?? "").trim();
+        const region = String(headerRow2.getCell(i).value ?? "").trim();
+        const magnet = String(headerRow3.getCell(i).value ?? "").trim();
+
         if (customer === newCustomer && region === newRegion && magnet === newMagnet) {
           targetCol = i;
           break;
@@ -773,32 +774,21 @@ app.post("/api/he/save", async (req, res) => {
         let rowIndex = 4;
         while (sheet2.getCell(rowIndex, targetCol).value) rowIndex++;
         sheet2.getCell(rowIndex, targetCol).value = chargeDate;
-        console.log(`✅ 기록 추가: ${newCustomer} / ${newRegion} / ${newMagnet} → ${rowIndex}행`);
+        console.log(`✅ ${newCustomer} (${newRegion} / ${newMagnet}) → ${rowIndex}행 기록됨`);
       } else {
-        console.warn(`❗ 기록 시트에서 ${newCustomer} (${newRegion} / ${newMagnet}) 찾을 수 없음`);
+        console.warn(`❗ 기록 시트에 ${newCustomer} (${newRegion} / ${newMagnet}) 찾을 수 없음`);
       }
     });
 
-
-    // ✅ 5. 저장 → He.xlsx로 저장 (안전하게)
-    
-    // 🔒 G열 이후 불필요한 열 제거 (파일 깨짐 방지)
-    if (sheet1.columnCount > 6) {
-      sheet1.spliceColumns(7, sheet1.columnCount - 6);
-    }
-
-    // 💡 저장 옵션 설정
+    // ✅ 5. 저장 (엑셀)
     workbook.calcProperties.fullCalcOnLoad = true;
-
-    // ✅ 저장
     await workbook.xlsx.writeFile("assets/He.xlsx");
 
-    // 🕒 저장 완료까지 0.5초 대기 (flush 보장)
+    // ✅ 6. flush 기다리기
     await new Promise(resolve => setTimeout(resolve, 500));
 
-    // ✅ 6. Git 푸시
+    // ✅ 7. Git 푸시
     await pushToGit();
-
 
     res.json({ success: true });
   } catch (err) {
