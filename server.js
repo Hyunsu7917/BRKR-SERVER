@@ -708,7 +708,11 @@ app.post("/api/he/save", async (req, res) => {
       backup = Array.isArray(json[0]) ? json.flat() : json;
     }
 
-    backup.push(...records);
+    const timestampedRecords = records.map(record => ({
+      ...record,
+      Timestamp: new Date().toISOString(),
+    }));
+    backup.push(...timestampedRecords);    
     fs.writeFileSync(filePath, JSON.stringify(backup, null, 2));
 
     // ✅ 2. 엑셀 파일 로드
