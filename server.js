@@ -736,8 +736,6 @@ app.post("/api/he/save", async (req, res) => {
 
     // ✅ 3. 일정 시트 업데이트
     records.forEach((record) => {
-      const rows = sheet1.getRows(2, sheet1.rowCount - 1); // 🔁 반복마다 최신 행 가져옴
-
       const customer = String(record["고객사"] ?? "").trim();
       const region = String(record["지역"] ?? "").trim();
       const magnet = String(record["Magnet"] ?? "").trim();
@@ -745,6 +743,7 @@ app.post("/api/he/save", async (req, res) => {
       const nextChargeDate = record["다음충진일"];
       const cycle = record["충진주기(개월)"];
 
+      const rows = sheet1.getRows(2, sheet1.rowCount - 1);
       const matchedRow = rows.find((row) => {
         const rowCustomer = String(row.getCell(1).value ?? "").trim();
         const rowRegion = String(row.getCell(2).value ?? "").trim();
@@ -807,6 +806,7 @@ app.post("/api/he/save", async (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 });
+
 
 app.post('/api/set-helium-reservation', async (req, res) => {
   const { 고객사, 지역, Magnet, 충진일, 예약여부 } = req.body;
