@@ -689,6 +689,8 @@ app.get("/excel/he/schedule", async (req, res) => {
 });
 
 // ✅ Helium 기록 저장 API
+// ✅ 안전하게 동작하는 일정 + 기록 시트 저장 스크립트 (findRow 없이)
+
 app.post("/api/he/save", async (req, res) => {
   const records = req.body;
   const filePath = path.join(__dirname, "he-usage-backup.json");
@@ -716,14 +718,14 @@ app.post("/api/he/save", async (req, res) => {
     const sheet1 = workbook.getWorksheet("일정");
     const sheet2 = workbook.getWorksheet("기록");
 
-    // ✅ 커스텀 헬퍼 함수 추가 (row.find 대체)
-    ExcelJS.Worksheet.prototype.findRow = function (callback) {
-      for (let i = 2; i <= this.rowCount; i++) {
-        const row = this.getRow(i);
-        if (callback(row)) return row;
-      }
-      return null;
-    };
+    // ✅ G열 이후 불필요한 열 제거 (깨짐 방지)
+    if (sheet1.columnCount > 6) {
+      sheet1.spliceColumns(7, sheet1.columnCount - 6);
+    }
+
+    const headerRow1 = sheet2.getRow(1);
+    const headerRow2 = sheet2.getRow(2);
+    const headerRow3 = sheet2.getRow(3);
 
     // ✅ 3. 일정 시트 업데이트
     records.forEach((record) => {
@@ -734,12 +736,17 @@ app.post("/api/he/save", async (req, res) => {
       const nextChargeDate = record["다음충진일"];
       const cycle = record["충진주기(개월)"];
 
-      const matchedRow = sheet1.findRow((row) => {
+      let matchedRow = null;
+      for (let i = 2; i <= sheet1.rowCount; i++) {
+        const row = sheet1.getRow(i);
         const rowCustomer = String(row.getCell(1).value ?? "").trim();
         const rowRegion = String(row.getCell(2).value ?? "").trim();
         const rowMagnet = String(row.getCell(3).value ?? "").trim();
-        return rowCustomer === customer && rowRegion === region && rowMagnet === magnet;
-      });
+        if (rowCustomer === customer && rowRegion === region && rowMagnet === magnet) {
+          matchedRow = row;
+          break;
+        }
+      }
 
       if (matchedRow) {
         matchedRow.getCell(4).value = chargeDate;
@@ -752,10 +759,6 @@ app.post("/api/he/save", async (req, res) => {
     });
 
     // ✅ 4. 기록 시트 업데이트
-    const headerRow1 = sheet2.getRow(1);
-    const headerRow2 = sheet2.getRow(2);
-    const headerRow3 = sheet2.getRow(3);
-
     records.forEach((record) => {
       const newCustomer = String(record["고객사"] ?? "").trim();
       const newRegion = String(record["지역"] ?? "").trim();
@@ -784,14 +787,14 @@ app.post("/api/he/save", async (req, res) => {
       }
     });
 
-    // ✅ 5. 저장 (엑셀)
+    // ✅ 저장 (엑셀)
     workbook.calcProperties.fullCalcOnLoad = true;
     await workbook.xlsx.writeFile("assets/He.xlsx");
 
-    // ✅ 6. flush 기다리기
-    await new Promise(resolve => setTimeout(resolve, 500));
+    // ✅ flush 대기
+    await new Promise((resolve) => setTimeout(resolve, 500));
 
-    // ✅ 7. Git 푸시
+    // ✅ Git push
     await pushToGit();
 
     res.json({ success: true });
