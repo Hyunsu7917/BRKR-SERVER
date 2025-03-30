@@ -688,6 +688,19 @@ app.get("/excel/he/schedule", async (req, res) => {
   }
 });
 // ✅ Helium Excel 저장 + Git 반영
+const ExcelJS = require("exceljs");
+const path = require("path");
+const fs = require("fs");
+
+// ✅ 커스텀 헬퍼 함수 추가 (row.find 대신 사용)
+ExcelJS.Worksheet.prototype.findRow = function (callback) {
+  for (let i = 2; i <= this.rowCount; i++) {
+    const row = this.getRow(i);
+    if (callback(row)) return row;
+  }
+  return null;
+};
+
 app.post("/api/he/save", async (req, res) => {
   const records = req.body;
   const filePath = path.join(__dirname, "he-usage-backup.json");
@@ -697,7 +710,7 @@ app.post("/api/he/save", async (req, res) => {
   }
 
   try {
-    // ✅ 1. 기존 백업 불러오기 + 중첩 배열 방지
+    // ✅ 백업 저장
     let backup = [];
     if (fs.existsSync(filePath)) {
       const raw = fs.readFileSync(filePath, "utf8");
@@ -708,33 +721,14 @@ app.post("/api/he/save", async (req, res) => {
     backup.push(...records);
     fs.writeFileSync(filePath, JSON.stringify(backup, null, 2));
 
-    // ✅ 2. 엑셀 파일 로드
+    // ✅ 엑셀 로드
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.readFile("assets/He.xlsx");
 
     const sheet1 = workbook.getWorksheet("일정");
     const sheet2 = workbook.getWorksheet("기록");
 
-    // ✅ 병합 해제 및 수식 제거
-    [sheet1, sheet2].forEach((sheet) => {
-      sheet.unMergeCells();
-      sheet.eachRow((row) => {
-        row.eachCell((cell) => {
-          if (cell.formula) delete cell.formula;
-        });
-      });
-    });
-
-    // ✅ G열 이후 불필요한 열 제거
-    if (sheet1.columnCount > 6) {
-      sheet1.spliceColumns(7, sheet1.columnCount - 6);
-    }
-
-    const headerRow1 = sheet2.getRow(1);
-    const headerRow2 = sheet2.getRow(2);
-    const headerRow3 = sheet2.getRow(3);
-
-    // ✅ 3. 일정 시트 업데이트
+    // ✅ 일정 시트 업데이트
     records.forEach((record) => {
       const customer = String(record["고객사"] ?? "").trim();
       const region = String(record["지역"] ?? "").trim();
@@ -743,8 +737,7 @@ app.post("/api/he/save", async (req, res) => {
       const nextChargeDate = record["다음충진일"];
       const cycle = record["충진주기(개월)"];
 
-      const rows = sheet1.getRows(2, sheet1.rowCount - 1);
-      const matchedRow = rows.find((row) => {
+      const matchedRow = sheet1.findRow((row) => {
         const rowCustomer = String(row.getCell(1).value ?? "").trim();
         const rowRegion = String(row.getCell(2).value ?? "").trim();
         const rowMagnet = String(row.getCell(3).value ?? "").trim();
@@ -761,49 +754,52 @@ app.post("/api/he/save", async (req, res) => {
       }
     });
 
-    // ✅ 4. 기록 시트 업데이트
+    // ✅ 기록 시트 업데이트
+    const headerRow1 = sheet2.getRow(1);
+    const headerRow2 = sheet2.getRow(2);
+    const headerRow3 = sheet2.getRow(3);
+
     records.forEach((record) => {
-      const newCustomer = String(record["고객사"] ?? "").trim();
-      const newRegion = String(record["지역"] ?? "").trim();
-      const newMagnet = String(record["Magnet"] ?? "").trim();
+      const customer = String(record["고객사"] ?? "").trim();
+      const region = String(record["지역"] ?? "").trim();
+      const magnet = String(record["Magnet"] ?? "").trim();
       const chargeDate = record["충진일"];
 
       let targetCol = -1;
       for (let i = 2; i <= sheet2.columnCount; i++) {
-        const customer = String(headerRow1.getCell(i).value ?? "").trim();
-        const region = String(headerRow2.getCell(i).value ?? "").trim();
-        const magnet = String(headerRow3.getCell(i).value ?? "").trim();
+        const colCustomer = String(headerRow1.getCell(i).value ?? "").trim();
+        const colRegion = String(headerRow2.getCell(i).value ?? "").trim();
+        const colMagnet = String(headerRow3.getCell(i).value ?? "").trim();
 
-        if (customer === newCustomer && region === newRegion && magnet === newMagnet) {
+        if (colCustomer === customer && colRegion === region && colMagnet === magnet) {
           targetCol = i;
           break;
         }
       }
 
       if (targetCol !== -1) {
-        let rowIndex = 4;
-        while (sheet2.getCell(rowIndex, targetCol).value) rowIndex++;
-        sheet2.getCell(rowIndex, targetCol).value = chargeDate;
-        console.log(`✅ ${newCustomer} (${newRegion} / ${newMagnet}) → ${rowIndex}행 기록됨`);
+        let row = 4;
+        while (sheet2.getRow(row).getCell(targetCol).value) row++;
+        sheet2.getRow(row).getCell(targetCol).value = chargeDate;
+        console.log(`✅ 기록 추가: ${customer} / ${region} / ${magnet} → ${row}행`);
       } else {
-        console.warn(`❗ 기록 시트에 ${newCustomer} (${newRegion} / ${newMagnet}) 찾을 수 없음`);
+        console.warn(`❗ 기록 시트에서 ${customer} / ${region} / ${magnet} 열을 찾지 못함`);
       }
     });
 
-    // ✅ 5. 저장 (엑셀)
+    // ✅ 저장 옵션 설정
     workbook.calcProperties.fullCalcOnLoad = true;
-    await workbook.xlsx.writeFile("assets/He.xlsx", {
-      useStyles: false,
-      useSharedStrings: false
-    });
 
-    // ✅ 6. Git 푸시
+    // ✅ 저장
+    await workbook.xlsx.writeFile("assets/He.xlsx");
+
+    // ✅ Git 푸시
     await pushToGit();
 
-    res.json({ success: true });
+    return res.json({ success: true });
   } catch (err) {
     console.error("💥 저장 실패:", err);
-    res.status(500).json({ success: false, error: err.message });
+    return res.status(500).json({ success: false, error: err.message });
   }
 });
 
