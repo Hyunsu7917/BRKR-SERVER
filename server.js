@@ -742,13 +742,13 @@ app.post("/api/he/save", async (req, res) => {
       });
 
       if (matchedRow) {
-        matchedRow.getCell(4).value = chargeDate;
-        matchedRow.getCell(5).value = nextChargeDate;
-        matchedRow.getCell(6).value = cycle;
+        matchedRow.getCell(4).value = String(chargeDate);
+        matchedRow.getCell(5).value = String(nextChargeDate);
+        matchedRow.getCell(6).value = String(cycle);
         console.log(`✅ 일정 업데이트: ${customer} / ${region} / ${magnet}`);
       } else {
         console.warn(`❌ 일정 시트에서 ${customer} / ${region} / ${magnet} 찾지 못함`);
-      }
+      }      
     });
 
     // ✅ 4. 기록 시트 업데이트
@@ -773,7 +773,7 @@ app.post("/api/he/save", async (req, res) => {
       if (targetCol !== -1) {
         let rowIndex = 4;
         while (sheet2.getCell(rowIndex, targetCol).value) rowIndex++;
-        sheet2.getCell(rowIndex, targetCol).value = chargeDate;
+        sheet2.getCell(rowIndex, targetCol).value = String(chargeDate);
         console.log(`✅ ${newCustomer} (${newRegion} / ${newMagnet}) → ${rowIndex}행 기록됨`);
       } else {
         console.warn(`❗ 기록 시트에 ${newCustomer} (${newRegion} / ${newMagnet}) 찾을 수 없음`);
@@ -806,8 +806,6 @@ app.post("/api/he/save", async (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 });
-
-
 
 
 app.post('/api/set-helium-reservation', async (req, res) => {
