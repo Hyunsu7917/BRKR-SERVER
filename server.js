@@ -687,10 +687,6 @@ app.get("/excel/he/schedule", async (req, res) => {
     res.status(500).json({ error: "서버 에러" });
   }
 });
-// ✅ Helium Excel 저장 + Git 반영
-const ExcelJS = require("exceljs");
-const path = require("path");
-const fs = require("fs");
 
 // ✅ 커스텀 헬퍼 함수 추가 (row.find 대신 사용)
 ExcelJS.Worksheet.prototype.findRow = function (callback) {
