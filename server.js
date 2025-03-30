@@ -688,15 +688,6 @@ app.get("/excel/he/schedule", async (req, res) => {
   }
 });
 
-// ✅ 커스텀 헬퍼 함수 추가 (row.find 대신 사용)
-ExcelJS.Worksheet.prototype.findRow = function (callback) {
-  for (let i = 2; i <= this.rowCount; i++) {
-    const row = this.getRow(i);
-    if (callback(row)) return row;
-  }
-  return null;
-};
-
 app.post("/api/he/save", async (req, res) => {
   const records = req.body;
   const filePath = path.join(__dirname, "he-usage-backup.json");
