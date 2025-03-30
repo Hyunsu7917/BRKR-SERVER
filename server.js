@@ -780,12 +780,26 @@ app.post("/api/he/save", async (req, res) => {
       }
     });
 
-    // ✅ 5. 저장 + 엑셀 깨짐 방지 설정
+    // ✅ 5. 저장 → He.xlsx로 저장 (안전하게)
+    sheet1 = workbook.getWorksheet("일정");
+
+    // 🔒 G열 이후 불필요한 열 제거 (파일 깨짐 방지)
+    if (sheet1.columnCount > 6) {
+      sheet1.spliceColumns(7, sheet1.columnCount - 6);
+    }
+
+    // 💡 저장 옵션 설정
     workbook.calcProperties.fullCalcOnLoad = true;
+
+    // ✅ 저장
     await workbook.xlsx.writeFile("assets/He.xlsx");
 
-    // ✅ 6. Git 자동 푸시
+    // 🕒 저장 완료까지 0.5초 대기 (flush 보장)
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // ✅ 6. Git 푸시
     await pushToGit();
+
 
     res.json({ success: true });
   } catch (err) {
