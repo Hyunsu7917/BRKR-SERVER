@@ -720,23 +720,16 @@ app.post("/api/he/save", async (req, res) => {
       sheet1.spliceColumns(7, sheet1.columnCount - 6);
     }
 
-    // 🔓 병합 셀 해제 (선택 사항)
+    // 🔓 병합 셀 해제 + 수식 제거 (엑셀 구조 오류 방지)
     sheet1.unMergeCells();
-
-    // 🧹 수식 제거 (선택 사항)
-    sheet1.eachRow((row) => {
+    sheet1.eachRow((row, rowNum) => {
+      if (!row) return; // 빈 row 방지
       row.eachCell((cell) => {
-        if (cell.formula) delete cell.formula;
+        if (cell?.formula) delete cell.formula;
       });
     });
 
-    // ✅ 저장 옵션 사용 → 깨짐 방지
-    await workbook.xlsx.writeFile("assets/He.xlsx", {
-      useStyles: false,
-      useSharedStrings: false
-    });    
-
-    const rows = sheet1.getRows(2, sheet1.rowCount - 1);
+    const rows = sheet1.getRows(2, sheet1.rowCount - 1)?.filter(Boolean) || [];
     const headerRow1 = sheet2.getRow(1);
     const headerRow2 = sheet2.getRow(2);
     const headerRow3 = sheet2.getRow(3);
@@ -798,7 +791,10 @@ app.post("/api/he/save", async (req, res) => {
 
     // ✅ 5. 저장 (엑셀)
     workbook.calcProperties.fullCalcOnLoad = true;
-    await workbook.xlsx.writeFile("assets/He.xlsx");
+    await workbook.xlsx.writeFile("assets/He.xlsx", {
+      useStyles: false,
+      useSharedStrings: false
+    });
 
     // ✅ 6. flush 기다리기
     await new Promise(resolve => setTimeout(resolve, 500));
