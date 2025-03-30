@@ -715,10 +715,26 @@ app.post("/api/he/save", async (req, res) => {
     const sheet1 = workbook.getWorksheet("일정");
     const sheet2 = workbook.getWorksheet("기록");
 
-    // ✅ G열 이후 불필요한 열 제거 (깨짐 방지)
+    // ✅ G열 이후 불필요한 열 제거 (파일 깨짐 방지)
     if (sheet1.columnCount > 6) {
       sheet1.spliceColumns(7, sheet1.columnCount - 6);
     }
+
+    // 🔓 병합 셀 해제 (선택 사항)
+    sheet1.unMergeCells();
+
+    // 🧹 수식 제거 (선택 사항)
+    sheet1.eachRow((row) => {
+      row.eachCell((cell) => {
+        if (cell.formula) delete cell.formula;
+      });
+    });
+
+    // ✅ 저장 옵션 사용 → 깨짐 방지
+    await workbook.xlsx.writeFile("assets/He.xlsx", {
+      useStyles: false,
+      useSharedStrings: false
+    });    
 
     const rows = sheet1.getRows(2, sheet1.rowCount - 1);
     const headerRow1 = sheet2.getRow(1);
