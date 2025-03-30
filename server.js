@@ -757,8 +757,8 @@ app.post("/api/he/save", async (req, res) => {
         console.warn(`❌ 일정 시트에서 ${customer} / ${region} / ${magnet} 찾지 못함`);
       }
     });
-
-    // ✅ 4. 기록 시트 업데이트
+    
+    // ✅ 4. 기록 시트 업데이트 (자동 .1, .2 무시 대응)
     records.forEach((record) => {
       const newCustomer = String(record["고객사"] ?? "").trim();
       const newRegion = String(record["지역"] ?? "").trim();
@@ -771,7 +771,8 @@ app.post("/api/he/save", async (req, res) => {
         const region = String(headerRow2.getCell(i).value ?? "").trim();
         const magnet = String(headerRow3.getCell(i).value ?? "").trim();
 
-        if (customer === newCustomer && region === newRegion && magnet === newMagnet) {
+        // ✅ 자동무시: "3M", "3M.1", "3M.2" 다 동일하게 간주
+        if (customer.startsWith(newCustomer) && region === newRegion && magnet === newMagnet) {
           targetCol = i;
           break;
         }
@@ -786,6 +787,7 @@ app.post("/api/he/save", async (req, res) => {
         console.warn(`❗ 기록 시트에 ${newCustomer} (${newRegion} / ${newMagnet}) 찾을 수 없음`);
       }
     });
+
 
     // ✅ 저장 (엑셀)
     workbook.calcProperties.fullCalcOnLoad = true;
