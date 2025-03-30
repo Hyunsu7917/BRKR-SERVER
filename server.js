@@ -781,8 +781,7 @@ app.post("/api/he/save", async (req, res) => {
     });
 
     // ✅ 5. 저장 → He.xlsx로 저장 (안전하게)
-    sheet1 = workbook.getWorksheet("일정");
-
+    
     // 🔒 G열 이후 불필요한 열 제거 (파일 깨짐 방지)
     if (sheet1.columnCount > 6) {
       sheet1.spliceColumns(7, sheet1.columnCount - 6);
