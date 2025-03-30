@@ -715,6 +715,16 @@ app.post("/api/he/save", async (req, res) => {
     const sheet1 = workbook.getWorksheet("일정");
     const sheet2 = workbook.getWorksheet("기록");
 
+    console.log("💬 일정 시트 row 디버그:");
+    sheet1.eachRow((row, i) => {
+      if (i < 2) return; // 헤더 제외
+      const a = String(row.getCell(1).value ?? "").trim();
+      const b = String(row.getCell(2).value ?? "").trim();
+      const c = String(row.getCell(3).value ?? "").trim();
+      console.log(`[${i}]`, a, "/", b, "/", c);
+    });
+
+
     // ✅ 일정 시트 업데이트
     records.forEach((record) => {
       const customer = String(record["고객사"] ?? "").trim();
