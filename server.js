@@ -878,6 +878,25 @@ app.post('/api/unlock', (req, res) => {
   if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
   res.json({ success: true });
 });
+
+// ✅ 헬륨 일정 전체 가져오기 (캘린더용)
+app.get("/api/helium", (req, res) => {
+  const filePath = path.join(__dirname, "he-usage-backup.json");
+
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ error: "백업 파일이 존재하지 않습니다." });
+  }
+
+  try {
+    const raw = fs.readFileSync(filePath, "utf-8");
+    const data = JSON.parse(raw);
+    res.json(data);
+  } catch (err) {
+    console.error("💥 helium 데이터 로드 실패:", err.message);
+    res.status(500).json({ error: "헬륨 데이터 로드 중 오류 발생" });
+  }
+});
+
 // ✅ 서버 시작
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
