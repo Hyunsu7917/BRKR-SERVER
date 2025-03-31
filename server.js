@@ -812,40 +812,39 @@ app.post("/api/he/save", async (req, res) => {
 
 
 app.post('/api/set-helium-reservation', async (req, res) => {
-  const { 고객사, 지역, Magnet, 충진일, 예약여부 } = req.body;
+  const { 고객사, 지역, Magnet, 충진일, 예약여부, 충진주기, Timestamp } = req.body;
 
   try {
-    // 1. 기존 백업 파일 로드
     const usagePath = path.join(__dirname, 'he-usage-backup.json');
     let usageData = [];
     if (fs.existsSync(usagePath)) {
       usageData = JSON.parse(fs.readFileSync(usagePath, 'utf-8'));
     }
 
-    // 2. 동일한 고객사+지역+Magnet+충진일 항목 찾기
-    let found = false;
-    usageData = usageData.map(entry => {
-      if (
+    // ✅ 기존 동일 고객사+지역+Magnet을 가진 최신 데이터 제거
+    usageData = usageData.filter(entry => {
+      return !(
         entry['고객사'] === 고객사 &&
         entry['지역'] === 지역 &&
-        entry['Magnet'] === Magnet &&
-        entry['충진일'] === 충진일
-      ) {
-        found = true;
-        return { ...entry, 예약여부 };
-      }
-      return entry;
+        entry['Magnet'] === Magnet
+      );
     });
 
-    // 없으면 새 항목 추가
-    if (!found) {
-      usageData.push({ 고객사, 지역, Magnet, 충진일, 예약여부 });
-    }
+    // ✅ 새 데이터 추가
+    usageData.push({
+      고객사,
+      지역,
+      Magnet,
+      충진일,
+      예약여부,
+      충진주기,
+      Timestamp
+    });
 
-    // 3. 백업 파일 저장
+    // 저장
     fs.writeFileSync(usagePath, JSON.stringify(usageData, null, 2), 'utf-8');
 
-    // 4. Git commit + push
+    // Git commit + push
     const exec = require('child_process').exec;
     exec(`git add ${usagePath} && git commit -m "Update He reservation for ${고객사}" && git push`, {
       cwd: __dirname,
@@ -855,7 +854,7 @@ app.post('/api/set-helium-reservation', async (req, res) => {
       },
     });
 
-    // 5. Excel 업데이트 스크립트 실행
+    // Excel 반영
     const { execSync } = require('child_process');
     execSync('node update-he-excel.js', { stdio: 'inherit' });
 
@@ -865,6 +864,7 @@ app.post('/api/set-helium-reservation', async (req, res) => {
     res.status(500).json({ success: false, message: '예약 처리 중 오류 발생' });
   }
 });
+
 
 app.get('/api/check-manual-mode', (req, res) => {
   const lockPath = path.join(__dirname, 'manual-mode.txt');
