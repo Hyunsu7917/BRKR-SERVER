@@ -812,7 +812,7 @@ app.post("/api/he/save", async (req, res) => {
 
 
 app.post('/api/set-helium-reservation', async (req, res) => {
-  const { 고객사, 지역, Magnet, 충진일, 예약여부, 충진주기, Timestamp } = req.body;
+  const { 고객사, 지역, Magnet, 충진일, 예약여부, 충진주기, Timestamp, 사용량 } = req.body;
 
   try {
     const usagePath = path.join(__dirname, 'he-usage-backup.json');
@@ -832,11 +832,13 @@ app.post('/api/set-helium-reservation', async (req, res) => {
 
     // ✅ 다음충진일 계산
     let 다음충진일 = '';
-    if (충진일 && 충진주기) {
+    if (충진일) {
       const nextDate = new Date(충진일);
-      nextDate.setMonth(nextDate.getMonth() + parseInt(충진주기));
-      다음충진일 = nextDate.toISOString().slice(0, 10); // YYYY-MM-DD 형식
+      const monthGap = parseInt(충진주기 || 0);  // ← 안전하게 변환
+      nextDate.setMonth(nextDate.getMonth() + monthGap);
+      다음충진일 = nextDate.toISOString().slice(0, 10);
     }
+
 
     // ✅ 새 데이터 추가
     usageData.push({
@@ -844,9 +846,10 @@ app.post('/api/set-helium-reservation', async (req, res) => {
       지역,
       Magnet,
       충진일,
-      다음충진일, // ← 추가됨!
+      다음충진일,   // 계산된 값
+      충진주기,     // ✅ 여기 저장!!
       예약여부,
-      충진주기,
+      사용량,
       Timestamp
     });
 
