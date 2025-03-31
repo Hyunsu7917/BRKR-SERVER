@@ -830,12 +830,21 @@ app.post('/api/set-helium-reservation', async (req, res) => {
       );
     });
 
+    // ✅ 다음충진일 계산
+    let 다음충진일 = '';
+    if (충진일 && 충진주기) {
+      const nextDate = new Date(충진일);
+      nextDate.setMonth(nextDate.getMonth() + parseInt(충진주기));
+      다음충진일 = nextDate.toISOString().slice(0, 10); // YYYY-MM-DD 형식
+    }
+
     // ✅ 새 데이터 추가
     usageData.push({
       고객사,
       지역,
       Magnet,
       충진일,
+      다음충진일, // ← 추가됨!
       예약여부,
       충진주기,
       Timestamp
