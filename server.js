@@ -855,6 +855,7 @@ app.post('/api/set-helium-reservation', async (req, res) => {
 
     // 저장
     fs.writeFileSync(usagePath, JSON.stringify(usageData, null, 2), 'utf-8');
+    console.log('[✔] JSON 저장 완료:', usagePath);
 
     // Git commit + push
     const exec = require('child_process').exec;
