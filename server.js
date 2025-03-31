@@ -847,7 +847,7 @@ app.post('/api/set-helium-reservation', async (req, res) => {
       Magnet,
       충진일,
       다음충진일,   // 계산된 값
-      충진주기,     // ✅ 여기 저장!!
+      '충진주기(개월)': 충진주기,     // ✅ 여기 저장!!
       예약여부,
       사용량,
       Timestamp
