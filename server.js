@@ -858,14 +858,21 @@ app.post('/api/set-helium-reservation', async (req, res) => {
     console.log('[✔] JSON 저장 완료:', usagePath);
 
     // Git commit + push
-    const exec = require('child_process').exec;
-    exec(`git add ${usagePath} && git commit -m "Update He reservation for ${고객사}" && git push`, {
-      cwd: __dirname,
-      env: {
-        ...process.env,
-        GIT_SSH_COMMAND: `ssh -i ${process.env.SSH_PRIVATE_KEY_PATH}`,
-      },
-    });
+    const { execSync } = require('child_process');
+
+    try {
+      console.log('📂 Git status 직전');
+      execSync('git status', { stdio: 'inherit' });
+
+      execSync(`git add ${usagePath}`);
+      execSync(`git commit -m "Update He reservation for ${고객사}"`, { stdio: 'inherit' });
+      execSync('git push', { stdio: 'inherit' });
+
+      console.log('✅ Git push 완료');
+    } catch (err) {
+      console.log('⚠️ Git 커밋 또는 푸시 실패:', err.message);
+    }
+
 
     // Excel 반영
     const { execSync } = require('child_process');
