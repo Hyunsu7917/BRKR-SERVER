@@ -822,7 +822,7 @@ app.post('/api/set-helium-reservation', async (req, res) => {
     }
 
     // 기존 예약 제거 + 새 예약 추가
-    usageData = usageData.filter(entry => !(entry['고객사'] === 고객사 && entry['지역'] === 지역 && entry['Magnet'] === Magnet));
+    
     let 다음충진일 = '';
     if (충진일) {
       const nextDate = new Date(충진일);
