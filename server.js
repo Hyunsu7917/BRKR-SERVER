@@ -875,7 +875,7 @@ app.post('/api/set-helium-reservation', async (req, res) => {
 
 
     // Excel 반영
-    const { execSync } = require('child_process');
+    
     execSync('node update-he-excel.js', { stdio: 'inherit' });
 
     res.status(200).json({ success: true, message: '예약 정보 저장 완료' });
