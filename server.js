@@ -821,61 +821,34 @@ app.post('/api/set-helium-reservation', async (req, res) => {
       usageData = JSON.parse(fs.readFileSync(usagePath, 'utf-8'));
     }
 
-    // ✅ 기존 동일 고객사+지역+Magnet을 가진 최신 데이터 제거
-    usageData = usageData.filter(entry => {
-      return !(
-        entry['고객사'] === 고객사 &&
-        entry['지역'] === 지역 &&
-        entry['Magnet'] === Magnet
-      );
-    });
-
-    // ✅ 다음충진일 계산
+    // 기존 예약 제거 + 새 예약 추가
+    usageData = usageData.filter(entry => !(entry['고객사'] === 고객사 && entry['지역'] === 지역 && entry['Magnet'] === Magnet));
     let 다음충진일 = '';
     if (충진일) {
       const nextDate = new Date(충진일);
-      const monthGap = parseInt(충진주기 || 0);  // ← 안전하게 변환
-      nextDate.setMonth(nextDate.getMonth() + monthGap);
+      nextDate.setMonth(nextDate.getMonth() + parseInt(충진주기 || 0));
       다음충진일 = nextDate.toISOString().slice(0, 10);
     }
 
-
-    // ✅ 새 데이터 추가
     usageData.push({
       고객사,
       지역,
       Magnet,
       충진일,
-      다음충진일,   // 계산된 값
-      '충진주기(개월)': 충진주기,     // ✅ 여기 저장!!
+      다음충진일,
+      '충진주기(개월)': 충진주기,
       예약여부,
       사용량,
       Timestamp
     });
 
-    // 저장
     fs.writeFileSync(usagePath, JSON.stringify(usageData, null, 2), 'utf-8');
     console.log('[✔] JSON 저장 완료:', usagePath);
 
-    // Git commit + push
-    const { execSync } = require('child_process');
-
-    try {
-      console.log('📂 Git status 직전');
-      execSync('git status', { stdio: 'inherit' });
-
-      execSync(`git add ${usagePath}`);
-      execSync(`git commit -m "Update He reservation for ${고객사}"`, { stdio: 'inherit' });
-      execSync('git push', { stdio: 'inherit' });
-
-      console.log('✅ Git push 완료');
-    } catch (err) {
-      console.log('⚠️ Git 커밋 또는 푸시 실패:', err.message);
-    }
-
+    // ✅ Git push (Part 방식처럼)
+    await pushToGit();
 
     // Excel 반영
-    
     execSync('node update-he-excel.js', { stdio: 'inherit' });
 
     res.status(200).json({ success: true, message: '예약 정보 저장 완료' });
@@ -884,6 +857,7 @@ app.post('/api/set-helium-reservation', async (req, res) => {
     res.status(500).json({ success: false, message: '예약 처리 중 오류 발생' });
   }
 });
+
 
 
 app.get('/api/check-manual-mode', (req, res) => {
