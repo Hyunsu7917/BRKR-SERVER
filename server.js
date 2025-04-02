@@ -858,8 +858,6 @@ app.post('/api/set-helium-reservation', async (req, res) => {
   }
 });
 
-
-
 app.get('/api/check-manual-mode', (req, res) => {
   const lockPath = path.join(__dirname, 'manual-mode.txt');
   const isLocked = fs.existsSync(lockPath);
